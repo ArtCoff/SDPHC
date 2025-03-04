@@ -1,0 +1,1 @@
+nuitka --mingw64 --standalone --onefile --enable-plugin=pyside6 --windows-console-mode=disable  --include-data-files=ref/*=ref/  --output-dir=C:\Users\g2382\Desktop\v2 wins_v2.py 
