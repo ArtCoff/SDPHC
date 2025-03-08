@@ -1,4 +1,5 @@
 import sys
+from enum import Enum
 from PySide6.QtCore import Qt, QAbstractTableModel, Signal
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
@@ -26,12 +27,12 @@ from draw_EN import (
     绘制超标点位,
     污染等级识别,
 )
-from PredefinedData import software_name
+from PredefinedData import software_name, Secondary_Functions_of_ExperienceValue
 from CustomControl import (
     next_btn,
     help_btn,
     CustomComboBox,
-    WrapButton,
+    # WrapButton,
     WrapButton_EN,
     GeoDataFrameModel,
 )
@@ -167,10 +168,10 @@ class Contamination_identification_win(QWidget):
 
         # 功能连接
         self.exit_btn.clicked.connect(self.close)
-        self.function1_btn.clicked.connect(self.function1)
-        self.function2_btn.clicked.connect(self.function2)
-        self.function4_btn.clicked.connect(self.function4)
-        self.function5_btn.clicked.connect(self.function5)
+        self.function1_btn.clicked.connect(self.function_PCP)
+        self.function2_btn.clicked.connect(self.function_PSA)
+        self.function4_btn.clicked.connect(self.function_SOC)
+        self.function5_btn.clicked.connect(self.function_PLI)
         # 布局
         # CN Layput
         # btn_layout = QGridLayout()
@@ -193,7 +194,7 @@ class Contamination_identification_win(QWidget):
         v_layout.addLayout(h4_layout)
         self.setLayout(v_layout)
 
-    def function1(self):
+    def function_PCP(self):
         gdf = point_dataset_preprocess(self.point_dataset, self.options)
         gdf = 计算单个指标得分(gdf)
         gdf["The_Other_soil_gas_scores"] = gdf.apply(计算其他土壤气得分, axis=1)
@@ -212,35 +213,46 @@ class Contamination_identification_win(QWidget):
             ],
             all_gdf=display_gdf,
             outline_polygon_file=self.outline_dataset,
-            funtion_name="指示污染超标范围点位（除氡气）",
+            funtion_name=Secondary_Functions_of_ExperienceValue.function_PCP,
         )
         self.result_win1.show()
 
-    def function2(self):
+    def function_PSA(self):
         gdf = point_dataset_preprocess(self.point_dataset, self.options)
         gdf = 计算总体得分(gdf)
         dis_play_gdf = gdf[gdf["其他土壤气得分"] >= 6]
         self.result_win2 = function_win(
             dis_play_gdf,
-            ["点位编号", "其他土壤气得分", "氡气赋分", "所有指标得分"],
+            columns_to_display=[
+                "Point_Code",
+                "The_Other_soil_gas_scores",
+                "Radon_Score",
+                "所有指标得分",
+            ],
+            # ["点位编号", "其他土壤气得分", "氡气赋分", "所有指标得分"],
             all_gdf=gdf,
             outline_polygon_file=self.outline_dataset,
-            funtion_name="污染源区与疑似污染源区",
+            funtion_name=Secondary_Functions_of_ExperienceValue.function_PSA,
         )
         self.result_win2.show()
 
-    def function4(self):
+    def function_SOC(self):
         gdf = 计算污染范围(self.point_dataset, self.options)
         self.result_win4 = function_win(
             gdf=gdf,
-            columns_to_display=["点位编号", "其他土壤气得分", "得分≥1"],
+            columns_to_display=[
+                "Point_Code",
+                "The_Other_soil_gas_scores",
+                "得分≥1",
+            ],
+            # columns_to_display=["点位编号", "其他土壤气得分", "得分≥1"],
             all_gdf=gdf,
             outline_polygon_file=self.outline_dataset,
-            funtion_name="污染范围",
+            funtion_name=Secondary_Functions_of_ExperienceValue.function_SOC,
         )
         self.result_win4.show()
 
-    def function5(self):
+    def function_PLI(self):
         gdf = point_dataset_preprocess(
             self.point_dataset,
             self.options,
@@ -329,23 +341,35 @@ class function_win(QWidget):
                 )
 
     def plot_data(self):
-        if self.function_name == "污染源区与疑似污染源区":
+        if self.function_name == Secondary_Functions_of_ExperienceValue.function_PSA:
             try:
                 绘制污染源区图(self.all_gdf, self.outline_polygon_file)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
-        elif self.function_name == "污染范围":
-            绘制污染范围(self.all_gdf, self.outline_polygon_file)
-        else:
-            绘制超标点位(self.all_gdf, self.outline_polygon_file)
+        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_SOC:
+            try:
+                绘制污染范围(self.all_gdf, self.outline_polygon_file)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
+        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_PCP:
+            try:
+                绘制超标点位(self.all_gdf, self.outline_polygon_file)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
 
     def Contamination_identification(self):
-        if self.function_name == "污染源区与疑似污染源区":
+        if self.function_name == Secondary_Functions_of_ExperienceValue.function_PSA:
             try:
                 绘制污染源区图(self.all_gdf, self.outline_polygon_file)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
-        elif self.function_name == "污染范围":
-            绘制污染范围(self.all_gdf, self.outline_polygon_file)
-        else:
-            绘制超标点位(self.all_gdf, self.outline_polygon_file)
+        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_SOC:
+            try:
+                绘制污染范围(self.all_gdf, self.outline_polygon_file)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
+        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_PCP:
+            try:
+                绘制超标点位(self.all_gdf, self.outline_polygon_file)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")

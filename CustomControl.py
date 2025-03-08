@@ -76,6 +76,9 @@ class help_btn(QPushButton):
                 border: 1px solid #8f8f91;
                 border-radius: 1px;
                 background-color: #dbdbdb;
+            }
+            QPushButton:hover {
+                background-color: soild darkgray;  
             }"""
         )
 
@@ -172,19 +175,13 @@ class WrapButton_EN(QPushButton):
             QPushButton {
                 background-color: lightgray;
                 border: 1px solid #A0A0A0;
+                border-radius: 5px;
                 padding: 10px 20px;
                 font-size: 14px;
                 color: black;
             }
             QPushButton:hover {
-                background-color: lightgray;
-                color: white;
-                border-color: #388E3C;
-            }
-            QPushButton:pressed {
-                background-color: gray;
-                color: white;
-                border-color: #2C6F2F;
+                 background-color: soild darkgray;
             }
         """
         )
