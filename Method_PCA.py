@@ -3,23 +3,11 @@ from enum import Enum
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtCore import Qt, QAbstractTableModel, Signal
 from PySide6.QtWidgets import (
-    QApplication,
     QMessageBox,
-    QTableView,
-    QLabel,
     QWidget,
     QFrame,
-    QComboBox,
-    QPushButton,
-    QRadioButton,
-    QDoubleSpinBox,
-    QPlainTextEdit,
-    QLineEdit,
-    QFileDialog,
     QVBoxLayout,
     QHBoxLayout,
-    QFormLayout,
-    QGridLayout,
     QSizePolicy,
 )
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -94,12 +82,11 @@ class PCAplot(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         self.next_btn = next_btn()
-        self.next_btn.clicked.connect(self.on_next_clicked)
-        btn_layout.addWidget(self.next_btn)
-
         self.help_btn = help_btn()
+        self.next_btn.clicked.connect(self.on_next_clicked)
         self.help_btn.clicked.connect(self.on_help_clicked)
         btn_layout.addWidget(self.help_btn)
+        btn_layout.addWidget(self.next_btn)
         self.total_layout.addLayout(self.layout)
         self.total_layout.addLayout(btn_layout)
         self.setLayout(self.total_layout)
@@ -222,6 +209,7 @@ class PC1_Interpolation(QWidget):
             pca_scores=self.pca_scores,
             interpolation_method=interpolation_method,
         )
+        self.canvas.set_minimum_size(400, 400)
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.canvas_layout.addWidget(self.toolbar)
         self.canvas_layout.addWidget(self.canvas)

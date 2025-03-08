@@ -1,0 +1,17 @@
+ # 忽略所有 .log 文件
+*.log
+
+# 忽略特定文件夹（如 node_modules 和 build）
+/node_modules
+/build
+/__pycache__
+
+# 忽略临时文件夹（递归匹配所有子目录中的 tmp 文件夹）
+**/tmp
+
+# 忽略特定文件
+.env
+.DS_Store
+
+# 反向规则（不忽略某个子目录）
+!important.log
