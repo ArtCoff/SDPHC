@@ -184,7 +184,7 @@ def point_dataset_preprocess(point_dataset, options):
             src_column = options[idx]
             # 带容错的数据赋值
             gdf[target_field] = gdf[src_column] if src_column in gdf.columns else None
-
+    print("preprocess done")
     return gdf
 
 
