@@ -197,8 +197,8 @@ class Contamination_identification_win(QWidget):
     def function_PCP(self):
         gdf = point_dataset_preprocess(self.point_dataset, self.options)
         gdf = 计算单个指标得分(gdf)
-        gdf["The_Other_soil_gas_scores"] = gdf.apply(计算其他土壤气得分, axis=1)
-        display_gdf = gdf[gdf["The_Other_soil_gas_scores"] >= 6]
+        gdf["The_other_soil_gas_scores"] = gdf.apply(计算其他土壤气得分, axis=1)
+        display_gdf = gdf[gdf["The_other_soil_gas_scores"] >= 6]
         self.result_win1 = function_win(
             display_gdf,
             columns_to_display=[
@@ -209,7 +209,7 @@ class Contamination_identification_win(QWidget):
                 "O2_Score",
                 "CH4_Score",
                 "H2S_Score",
-                "The_Other_soil_gas_scores",
+                "The_other_soil_gas_scores",
             ],
             all_gdf=display_gdf,
             outline_polygon_file=self.outline_dataset,
@@ -220,14 +220,14 @@ class Contamination_identification_win(QWidget):
     def function_PSA(self):
         gdf = point_dataset_preprocess(self.point_dataset, self.options)
         gdf = 计算总体得分(gdf)
-        dis_play_gdf = gdf[gdf["其他土壤气得分"] >= 6]
+        dis_play_gdf = gdf[gdf["The_other_soil_gas_scores"] >= 6]
         self.result_win2 = function_win(
             dis_play_gdf,
             columns_to_display=[
                 "Point_Code",
-                "The_Other_soil_gas_scores",
+                "The_other_soil_gas_scores",
                 "Radon_Score",
-                "所有指标得分",
+                "All_indicators_Scores",
             ],
             # ["点位编号", "其他土壤气得分", "氡气赋分", "所有指标得分"],
             all_gdf=gdf,
@@ -239,11 +239,11 @@ class Contamination_identification_win(QWidget):
     def function_SOC(self):
         gdf = 计算污染范围(self.point_dataset, self.options)
         self.result_win4 = function_win(
-            gdf=gdf,
+            display_gdf=gdf,
             columns_to_display=[
                 "Point_Code",
-                "The_Other_soil_gas_scores",
-                "得分≥1",
+                "The_other_soil_gas_scores",
+                "Scope_of_contamination",
             ],
             # columns_to_display=["点位编号", "其他土壤气得分", "得分≥1"],
             all_gdf=gdf,
@@ -268,11 +268,16 @@ class Contamination_identification_win(QWidget):
 class function_win(QWidget):
 
     def __init__(
-        self, gdf, columns_to_display, all_gdf, outline_polygon_file, funtion_name
+        self,
+        display_gdf,
+        columns_to_display,
+        all_gdf,
+        outline_polygon_file,
+        funtion_name,
     ):
         super().__init__()
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        self.gdf = gdf[columns_to_display]  #
+        self.gdf = display_gdf[columns_to_display]  #
         self.all_gdf = all_gdf
         self.outline_polygon_file = outline_polygon_file
         self.function_name = funtion_name

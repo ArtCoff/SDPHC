@@ -18,7 +18,7 @@ class Methods(Enum):
 
 
 class Secondary_Functions_of_ExperienceValue(Enum):
-    function_PCP = "Pollution exceedance points"
-    function_PSA = "Pollution source area"
-    function_SOC = "Scope of contamination"
-    function_PLI = "Pollution level identification"
+    function_PCP = "Pollution exceedance points"  # "指示污染超标范围点位（除氡气）"
+    function_PSA = "Pollution source area"  # "污染源区与疑似污染源区"
+    function_SOC = "Scope of contamination"  # "污染范围"
+    function_PLI = "Pollution level identification"  # "污染程度识别"

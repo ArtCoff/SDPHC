@@ -146,7 +146,7 @@ def point_dataset_preprocess(point_dataset, options):
 
     # 字段-索引映射配置表（可扩展）
     FIELD_MAPPING = [
-        ("Point_code", 0, ["点位"]),  # (目标字段, 默认索引, 兼容别名)
+        ("Point_Code", 0, ["点位"]),  # (目标字段, 默认索引, 兼容别名)
         ("Radon", 1, ["氡"]),
         ("VOCs", 2, ["挥发性有机物"]),
         ("CO2", 3, ["二氧化碳"]),
@@ -206,15 +206,15 @@ def 计算其他土壤气得分(row):
 
 def 指示污染超标范围点位(gdf):
     gdf = 计算单个指标得分(gdf)
-    gdf["The_Other_soil_gas_scores"] = gdf.apply(计算其他土壤气得分, axis=1)
+    gdf["The_other_soil_gas_scores"] = gdf.apply(计算其他土壤气得分, axis=1)
     return gdf
 
 
 # 只有其他土壤气得分大于等于≥6的点位才会测量Radon指标，进而计算所有指标得分，进而划分污染源区、疑似污染源区
 def 计算所有指标得分(row):
     Score = 0
-    Score += row["The_Other_soil_gas_scores"]
-    if row["The_Other_soil_gas_scores"] >= 6:
+    Score += row["The_other_soil_gas_scores"]
+    if row["The_other_soil_gas_scores"] >= 6:
         Score += row["Radon_Score"]
     return Score
 
@@ -309,7 +309,7 @@ def 绘制污染源区图(gdf, boundary_polygon_file):
 
 
 def 判断污染范围(row):
-    if row["The_Other_soil_gas_scores"] >= 1:
+    if row["The_other_soil_gas_scores"] >= 1:
         return 1
     else:
         return 0
@@ -323,7 +323,7 @@ def 计算污染范围(file_path, options):
     return gdf
 
 
-def 绘制污染范围(gdf, boundary_polygon_file):
+def 绘制污染范围(gdf, boundary_polygon_file, epsg_code=EPSG_code):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
@@ -368,7 +368,7 @@ def 绘制污染范围(gdf, boundary_polygon_file):
     plt.show()
 
 
-def 绘制超标点位(gdf, boundary_polygon_file):
+def 绘制超标点位(gdf, boundary_polygon_file, epsg_code=EPSG_code):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
