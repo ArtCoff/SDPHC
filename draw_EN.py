@@ -1,4 +1,6 @@
 import pandas as pd
+import geopandas as gpd
+import numpy as np
 from PredefinedData import EPSG_code
 
 Monitoring_indicators = [
@@ -38,33 +40,32 @@ Anomaly_value_Scale = pd.DataFrame(
 Anomaly_Rating_Scale = pd.DataFrame(data=abnormal_score, index=Monitoring_indicators)
 
 
-# 添加指北针 (North Arrow)
-def add_north_arrow(ax, x=0.1, y=0.9, size=20):
-    ax.annotate(
-        "N",
-        xy=(x, y),
-        xytext=(x, y - 0.1),
-        arrowprops=dict(facecolor="black", width=3, headwidth=15),
-        ha="center",
-        va="center",
-        fontsize=size,
-        xycoords="axes fraction",
-    )
-
-
-# def add_north_arrow(ax):
-#     """Add a north arrow to the plot."""
-#     x, y, arrow_length = 0.95, 0.95, 0.1
+# def add_north_arrow(ax, x=0.1, y=0.9, size=20):
 #     ax.annotate(
 #         "N",
 #         xy=(x, y),
-#         xytext=(x, y - arrow_length),
-#         arrowprops=dict(arrowstyle="->"),
+#         xytext=(x, y - 0.1),
+#         arrowprops=dict(facecolor="black", width=3, headwidth=15),
 #         ha="center",
 #         va="center",
-#         fontsize=12,
-#         xycoords=ax.transAxes,
+#         fontsize=size,
+#         xycoords="axes fraction",
 #     )
+
+
+# 添加指北针 (North Arrow)
+def add_north_arrow(ax):
+    x, y, arrow_length = 0.95, 0.95, 0.1
+    ax.annotate(
+        "N",
+        xy=(x, y),
+        xytext=(x, y - arrow_length),
+        arrowprops=dict(arrowstyle="->"),
+        ha="center",
+        va="center",
+        fontsize=12,
+        xycoords=ax.transAxes,
+    )
 
 
 # 添加比例尺 (Scale Bar)
@@ -85,29 +86,37 @@ def add_scalebar(ax, location="lower left"):
 
 def plot_basic_info(point_dataset, outline_dataset, epsg_code=EPSG_code):
     import geopandas as gpd
-    import matplotlib.pyplot as plt
-    from matplotlib import ticker
-    import matplotlib
+    from matplotlib import ticker, rcParams
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-    # print(outline_polygon_shp)
-    if outline_dataset == "" or point_dataset == "":
-        return
+    # 创建 matplotlib Figure 对象
+    fig = Figure()
+    ax = fig.add_subplot(111)
+    fig.set_tight_layout(True)
+    rcParams["font.family"] = "Times New Roman"
+    try:
+        # 读取数据
+        point_gdf = gpd.read_file(point_dataset).to_crs(epsg=epsg_code)
+        boundary_gdf = gpd.read_file(outline_dataset).to_crs(epsg=epsg_code)
 
-    matplotlib.rcParams["font.family"] = "Times New Roman"
-    point_dataset_gdf = gpd.read_file(point_dataset).to_crs(epsg=epsg_code)
-    boundary_polygon_gdf = gpd.read_file(outline_dataset).to_crs(epsg=epsg_code)
-    ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
-    point_dataset_gdf.plot(
-        ax=ax, color="blue", markersize=10, label="Monitoring Points"
-    )
-    add_north_arrow(ax)
-    add_scalebar(ax)
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.legend()
-    ax.autoscale()
-    plt.subplots_adjust(bottom=0.2)
-    plt.show()
+        # 绘制图形
+        boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red", label="Boundary")
+        point_gdf.plot(ax=ax, color="blue", markersize=10, label="Monitoring Points")
+
+        # 添加辅助元素
+        add_north_arrow(ax)
+        add_scalebar(ax)
+        ax.set_xlabel("X Coordinate", fontsize=12)
+        ax.set_ylabel("Y Coordinate", fontsize=12)
+        ax.legend(loc="lower right", fontsize=10)
+        ax.tick_params(axis="both", labelsize=10)
+        ax.autoscale()
+
+        return fig
+    except Exception as e:
+        print(f"Plot Error: {str(e)}")
+        return None
 
 
 def get_gdf_options(datapoints_shp):
@@ -142,49 +151,48 @@ def calculate_single_indicator_score(value, indicator):
 
 
 def point_dataset_preprocess(point_dataset, options):
-    import geopandas as gpd
+    # import geopandas as gpd
 
     # 字段-索引映射配置表（可扩展）
     FIELD_MAPPING = [
-        ("Point_Code", 0, ["点位"]),  # (目标字段, 默认索引, 兼容别名)
-        ("Radon", 1, ["氡"]),
-        ("VOCs", 2, ["挥发性有机物"]),
-        ("CO2", 3, ["二氧化碳"]),
-        ("O2", 4, ["氧气"]),
-        ("CH4", 5, ["甲烷"]),
-        ("H2", 6, ["氢气"]),
-        ("H2S", 7, ["硫化氢"]),
-        ("Functional_genes", 8, ["功能基因"]),
+        ("Point_Code", 0),
+        ("Radon", 1),
+        ("VOCs", 2),
+        ("CO2", 3),
+        ("O2", 4),
+        ("CH4", 5),
+        ("H2", 6),
+        ("H2S", 7),
+        ("Functional_genes", 8),
     ]
 
-    # 读取数据并转换坐标系
-    gdf = gpd.read_file(point_dataset).to_crs(epsg=EPSG_code)
+    # 读取数据
+    gdf = gpd.read_file(point_dataset)
+    # 创建无效索引集合
+    invalid_indices = set()
+    for idx, value in enumerate(options):
+        if value in ("", "No_data"):
+            invalid_indices.add(idx)
+    # 初始化状态报告字典
+    report = {field: False for field in FIELD_MAPPING}
 
-    # 构建无效索引集（空值或'无数据'）
-    invalid_indices = {i for i, v in enumerate(options) if v in ("", "No_data")}
-
-    for target_field, default_idx, aliases in FIELD_MAPPING:
-        # 动态查找有效列索引
-        found_idx = None
-        valid_options = [opt for opt in options if opt and opt != "No_data"]
-
-        # 优先匹配别名
-        for alias in aliases:
-            if alias in valid_options:
-                found_idx = options.index(alias)
-                break
-
-        # 未找到别名时回退默认索引
-        idx = found_idx if found_idx is not None else default_idx
-
-        # 索引有效性验证
-        if idx >= len(options) or idx in invalid_indices:
+    # 处理每个字段映射
+    for target_field, default_idx in FIELD_MAPPING:
+        # 验证索引有效性
+        if default_idx >= len(options) or default_idx in invalid_indices:
             gdf[target_field] = None
+            continue
+
+        # 获取源字段名
+        source_col = options[default_idx]
+
+        # 验证字段是否存在
+        if source_col in gdf.columns:
+            gdf[target_field] = gdf[source_col]
+            report[target_field] = True
         else:
-            src_column = options[idx]
-            # 带容错的数据赋值
-            gdf[target_field] = gdf[src_column] if src_column in gdf.columns else None
-    print("preprocess done")
+            gdf[target_field] = None
+
     return gdf
 
 
@@ -465,9 +473,9 @@ def 污染等级识别(gdf, boundary_polygon_file):
 
     # 根据是否存在总体得分属性，决定使用 total_score 还是 score
     values = np.where(
-        gdf["Score for all indicators"].notna(),
-        gdf["Score for all indicators"],
-        gdf["The_Other_soil_gas_scores"],
+        gdf["All_indicators_Scores"].notna(),
+        gdf["All_indicators_Scores"],
+        gdf["The_other_soil_gas_scores"],
     )
     min_x, min_y, max_x, max_y = boundary_polygon.total_bounds
     # 生成插值网格（100x100）
@@ -510,23 +518,54 @@ def 污染等级识别(gdf, boundary_polygon_file):
     add_scalebar(ax, location="lower left")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
-    # plt.scatter(points[:, 0], points[:, 1], c="red", label="Data Points")
+    plt.scatter(points[:, 0], points[:, 1], c="red", label="Data Points")
     cbar = plt.colorbar(im, ax=ax)
     cbar.set_label("Contamination risk", rotation=270, labelpad=20)
     # 在colorbar顶部添加文字说明
     cbar.ax.text(
-        1.4, 0.95, "High", ha="center", va="bottom", transform=cbar.ax.transAxes
+        1.4, 0.95, "High", ha="right", va="bottom", transform=cbar.ax.transAxes
     )
 
     # 在colorbar底部添加文字说明
-    cbar.ax.text(1.4, 0.05, "Low", ha="center", va="top", transform=cbar.ax.transAxes)
+    cbar.ax.text(1.4, 0.05, "Low", ha="right", va="top", transform=cbar.ax.transAxes)
 
-    # boundary_coords = np.array(boundary_poly.exterior.coords)
-    # plt.plot(boundary_coords[:, 0], boundary_coords[:, 1], "r-", lw=1, label="Boundary")
+    boundary_coords = np.array(boundary_poly.exterior.coords)
+    plt.plot(boundary_coords[:, 0], boundary_coords[:, 1], "r-", lw=1, label="Boundary")
     plt.show()
 
 
 # * Background Value Method #######################
+def compute_ecdf(data):
+    sorted_data = np.sort(data)
+    n = len(sorted_data)
+    cum_prob = np.arange(1, n + 1) / n  # y = i/n
+    return sorted_data, cum_prob
+
+
+def draw_ECDF(data, value, unit, save=False, attribute: str = " "):
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # 绘制 ECDF
+    def plot_ecdf(data, ax=None, **kwargs):
+        sorted_data, cum_prob = compute_ecdf(data)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 5))
+        # 绘制阶梯图
+        ax.step(sorted_data, cum_prob, where="post", **kwargs)
+        ax.scatter(sorted_data, cum_prob, s=2, color="red", zorder=2, label="points")
+        ax.set_xlabel("value")
+        ax.set_ylabel("ECDF")
+        ax.set_title(attribute)
+        ax.grid(True)
+        ax.legend()
+        return ax
+
+    # 执行绘图
+    plot_ecdf(data)
+    plt.show()
+
+
 def get_kemans_boundary(gdf, column):
     import numpy as np
     from sklearn.cluster import KMeans

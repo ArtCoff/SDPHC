@@ -1,6 +1,6 @@
 import sys
 from enum import Enum
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal
+from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThreadPool
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -35,6 +35,7 @@ from CustomControl import (
     # WrapButton,
     WrapButton_EN,
     GeoDataFrameModel,
+    PlotWindow,
 )
 from Pyside6Functions import center_window
 
@@ -43,6 +44,7 @@ class Attribute_Window(QWidget):
 
     def __init__(self, point_dataset, outline_dataset):
         super().__init__()
+        self.thread_pool = QThreadPool.globalInstance()
         self.point_dataset = point_dataset
         self.outline_dataset = outline_dataset
         self.combos = []
@@ -77,11 +79,11 @@ class Attribute_Window(QWidget):
             self.tr("Point number"),
             self.tr("Radon"),
             "VOCs",
-            "CO2",
-            "O2",
-            "CH4",
-            "H2",
-            "H2S",
+            "CO<sub>2</sub>",
+            "O<sub>2</sub>",
+            "CH<sub>4</sub>",
+            "H<sub>2</sub>",
+            "H<sub>2</sub>S",
             self.tr("Functional genes"),
         ]
         for i in range(9):
@@ -126,9 +128,11 @@ class Attribute_Window(QWidget):
         self.Contamination_identification_win.show()
 
     def plot_dataset_info(self):
-        plot_basic_info(
+        fig = plot_basic_info(
             point_dataset=self.point_dataset, outline_dataset=self.outline_dataset
         )
+        self.plot_window = PlotWindow(fig)
+        self.plot_window.show()
 
     def get_combos_content(self):
         return [combo.currentText() for combo in self.combos]

@@ -1,7 +1,7 @@
 import sys
 from enum import Enum
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QTranslator
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QTranslator, QPoint, QPointF
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QMessageBox,
@@ -19,8 +19,18 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QFormLayout,
     QGridLayout,
+    QProgressBar,
 )
 from PredefinedData import Methods
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QVBoxLayout,
+    QWidget,
+    QFileDialog,
+    QMessageBox,
+)
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 
 class file_line_edit(QLineEdit):
@@ -302,3 +312,113 @@ class Interpolation_method_selection(QWidget):
 
     def update_interpolation_method(self):
         self.Interpolation_method.emit(self.combobox.currentText())
+
+
+class bottom_buttons(QWidget):
+    help_btn_clicked = Signal()
+    next_btn_clicked = Signal()
+
+    def __init__(self):
+        super().__init__()
+        self.help_btn = help_btn()
+        self.next_btn = next_btn()
+        self.btn_layout = QHBoxLayout()
+        self.btn_layout.addStretch(90)
+        self.btn_layout.addWidget(self.help_btn, alignment=Qt.AlignRight)
+        self.btn_layout.addStretch(2)
+        self.btn_layout.addWidget(self.next_btn, alignment=Qt.AlignRight)
+        self.next_btn.clicked.connect(self.next_btn_clicked.emit)
+        self.help_btn.clicked.connect(self.help_btn_clicked.emit)
+        self.setLayout(self.btn_layout)
+
+
+class LoadingWindow(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setWindowTitle("Loading")
+        self.setWindowFlag(Qt.WindowStaysOnTopHint)  # 置顶显示
+        self.setWindowFlag(Qt.FramelessWindowHint)  # 无边框
+        self.setWindowModality(Qt.ApplicationModal)  # 模态窗口
+        self.setFixedSize(200, 100)
+        title_bar = QWidget()
+        title_bar_layout = QHBoxLayout()
+        title_bar_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.close_btn = QPushButton("x")
+        self.close_btn.setFont(QFont("Arial", 12))
+        self.close_btn.setFixedSize(20, 20)
+        self.close_btn.clicked.connect(self.close)
+        title_bar_layout.addStretch()
+        title_bar_layout.addWidget(self.close_btn)
+        title_bar.setLayout(title_bar_layout)
+        ###
+        layout = QVBoxLayout()
+        self.label = QLabel("Processing, please wait...")
+        self.label.setFont(QFont("Arial", 10))
+        self.label.setAlignment(Qt.AlignCenter)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 0)  # 不确定模式（持续滚动）
+        self.progress.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_bar)
+        layout.addWidget(self.label)
+        layout.addWidget(self.progress)
+        self.setLayout(layout)
+
+        self.draggable = True
+        self.drag_position = QPoint()
+
+    # 鼠标事件：拖动窗口
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton and self.draggable:
+            # 将 QPointF 转换为 QPoint
+            self.drag_position = (
+                event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            )
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton and self.draggable:
+            # 使用 globalPosition
+            self.move(event.globalPosition().toPoint() - self.drag_position)
+            event.accept()
+
+
+class PlotWindow(QWidget):
+    def __init__(self, fig):
+        super().__init__()
+        self.setWindowTitle("Geospatial Data Visualization")
+        self.setGeometry(100, 100, 400, 300)
+        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setMinimumSize(400, 300)
+
+        # 创建绘图区域
+        self.canvas = None
+        self.toolbar = None
+
+        # 生成图形
+        self.fig = fig
+        if not self.fig:
+            QMessageBox.critical(self, "Error", "Failed to generate plot")
+            return
+
+        # 设置界面
+        self.setup_ui()
+
+    def setup_ui(self):
+        # 创建 FigureCanvas 对象
+        self.canvas = FigureCanvas(self.fig)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+
+        # 布局
+        layout = QVBoxLayout()
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.canvas)
+        self.setLayout(layout)
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    win = LoadingWindow()
+    win.show()
+    sys.exit(app.exec())

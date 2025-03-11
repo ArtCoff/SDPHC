@@ -1,6 +1,6 @@
 import sys
 from enum import Enum
-from PySide6.QtCore import Qt, QCoreApplication
+from PySide6.QtCore import Qt, QThreadPool
 from PySide6.QtGui import QFont, QFontDatabase, QIcon, QScreen
 from PySide6.QtWidgets import (
     QApplication,
@@ -18,6 +18,7 @@ from CustomControl import (
     help_btn,
     CustomRadioButtons,
     LanguageSwitcher,
+    bottom_buttons,
 )
 from Method_ExperienceValue import Attribute_Window
 from Method_BackgroundValue import Attribute_Window_BackgroundValue
@@ -27,6 +28,7 @@ from Method_PCA import Attribute_Window_PCA
 class Start_Window(QWidget):
     def __init__(self, parent=None):
         super(Start_Window, self).__init__(parent)
+        self.thread_pool = QThreadPool.globalInstance()
         self.initUI()
 
     def initUI(self):
@@ -43,6 +45,12 @@ class Start_Window(QWidget):
         self.method = CustomRadioButtons()
         self.current_method_status = Methods.Experience_value_method
         self.method.current_method.connect(self.update_method)
+        #!
+        self.outline_dataset.setText(r"C:\Users\Apple\Desktop\MIM\boundary.gpkg")
+        self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\Lanxing.gpkg")
+
+        #!
+
         self.help_btn = help_btn()
         self.next_btn = next_btn()
         form_layout.addRow(self.tr("Site boundary file:"), self.outline_dataset)
@@ -91,7 +99,7 @@ class Start_Window(QWidget):
                 self, "Dataset Error", self.tr("Survey point data should not be empty.")
             )
             return
-        self.hide()
+
         if self.current_method_status == Methods.Experience_value_method:
             self.attribute_window = Attribute_Window(
                 point_dataset=self.point_dataset.text(),
@@ -110,6 +118,7 @@ class Start_Window(QWidget):
                 self.outline_dataset.text(),
             )
             self.attribute_window_PCA.show()
+        self.close()
 
     def update_method(self, method):
         self.current_method_status = method

@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtCore import Qt, QAbstractTableModel, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QMessageBox,
@@ -32,9 +32,12 @@ from CustomControl import (
     help_btn,
     CustomComboBox,
     WrapButton,
+    bottom_buttons,
+    PlotWindow,
 )
 from Pyside6Functions import center_window
 from Method_ExperienceValue import Attribute_Window
+from CustomControl import LoadingWindow
 from auto_report_CN import auto_report
 
 
@@ -75,14 +78,16 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
                 self.other_contaminants_text.appendPlainText(f"{data};")
 
     def on_next_clicked(self):
-        self.hide()
+
         contents = self.get_combos_content()
         self.background_value_win = background_value_input_manual(
             options=contents,
-            point_dataset=self.point_dataset,
+            points_dataset=self.point_dataset,
             outline_dataset=self.outline_dataset,
             other_contaminants=self.other_contaminants,
         )
+        self.background_value_win.show()
+        self.close()
 
 
 class background_value_input_doublespinbox(QDoubleSpinBox):
@@ -100,13 +105,22 @@ class background_value_input_manual(QWidget):
         self.initUI(options=options, gpkg_file=points_dataset)
         self.outline_dataset = outline_dataset
         self.other_contaminants = other_contaminants
-        print(options)
+        # print(options)
 
     def initUI(self, options, gpkg_file):
+        self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setWindowTitle(self.tr("Background value determination"))
-        self.setGeometry(100, 100, 400, 200)
+        self.setGeometry(100, 100, 500, 300)
+        self.setMinimumSize(500, 300)
         # 创建一个网格布局
         Gridlayout = QGridLayout()
+        Gridlayout.setSpacing(10)
+        # 设置列的拉伸因子
+        Gridlayout.setColumnStretch(0, 1)  # 标签列
+        Gridlayout.setColumnStretch(1, 2)  # 输入框列
+        Gridlayout.setColumnStretch(2, 1)  # 单位列
+        Gridlayout.setColumnStretch(3, 1)  # 聚类按钮列
+        Gridlayout.setColumnStretch(4, 1)  # ECDF按钮列
         (
             self.radon_background_value,
             self.VOCs_background_value,
@@ -131,12 +145,12 @@ class background_value_input_manual(QWidget):
             QLabel("copies/g"),
         )
         kmeans_btn1, kmeans_btn2, kmeans_btn3, kmeans_btn4, kmeans_btn5, kmeans_btn6 = (
-            QPushButton(self.tr("Indicator Data Analysis")),
-            QPushButton(self.tr("Indicator Data Analysis")),
-            QPushButton(self.tr("Indicator Data Analysis")),
-            QPushButton(self.tr("Indicator Data Analysis")),
-            QPushButton(self.tr("Indicator Data Analysis")),
-            QPushButton(self.tr("Indicator Data Analysis")),
+            QPushButton(self.tr("Clustering")),
+            QPushButton(self.tr("Clustering")),
+            QPushButton(self.tr("Clustering")),
+            QPushButton(self.tr("Clustering")),
+            QPushButton(self.tr("Clustering")),
+            QPushButton(self.tr("Clustering")),
         )
         kmeans_btn1.clicked.connect(lambda: self.plot_kemans_boundary("Radon", "Bq/m³"))
         kmeans_btn2.clicked.connect(lambda: self.plot_kemans_boundary("VOCs", "ppb"))
@@ -146,51 +160,122 @@ class background_value_input_manual(QWidget):
         kmeans_btn6.clicked.connect(
             lambda: self.plot_kemans_boundary(self.tr("Functional genes"), "copies/g")
         )
-        Gridlayout.addWidget(QLabel("Radon:"), 0, 0)
-        Gridlayout.addWidget(self.radon_background_value, 0, 1)
-        Gridlayout.addWidget(unit_label1, 0, 2)
-        Gridlayout.addWidget(kmeans_btn1, 0, 3)
-        Gridlayout.addWidget(QLabel("VOCs:"), 1, 0)
-        Gridlayout.addWidget(self.VOCs_background_value, 1, 1)
-        Gridlayout.addWidget(unit_label2, 1, 2)
-        Gridlayout.addWidget(kmeans_btn2, 1, 3)
-        Gridlayout.addWidget(QLabel("CO2:"), 2, 0)
-        Gridlayout.addWidget(self.CO2_background_value, 2, 1)
-        Gridlayout.addWidget(unit_label3, 2, 2)
-        Gridlayout.addWidget(kmeans_btn3, 2, 3)
-        Gridlayout.addWidget(QLabel("O2:"), 3, 0)
-        Gridlayout.addWidget(self.O2_background_value, 3, 1)
-        Gridlayout.addWidget(unit_label4, 3, 2)
-        Gridlayout.addWidget(kmeans_btn4, 3, 3)
-        Gridlayout.addWidget(QLabel("CH4:"), 4, 0)
-        Gridlayout.addWidget(self.CH4_background_value, 4, 1)
-        Gridlayout.addWidget(unit_label5, 4, 2)
-        Gridlayout.addWidget(kmeans_btn5, 4, 3)
-        Gridlayout.addWidget(QLabel(self.tr("Functional genes:")), 5, 0)
-        Gridlayout.addWidget(self.gene_background_value, 5, 1)
-        Gridlayout.addWidget(unit_label6, 5, 2)
-        Gridlayout.addWidget(kmeans_btn6, 5, 3)
+        ECDF_btn1, ECDF_btn2, ECDF_btn3, ECDF_btn4, ECDF_btn5, ECDF_btn6 = (
+            QPushButton(self.tr("ECDF")),
+            QPushButton(self.tr("ECDF")),
+            QPushButton(self.tr("ECDF")),
+            QPushButton(self.tr("ECDF")),
+            QPushButton(self.tr("ECDF")),
+            QPushButton(self.tr("ECDF")),
+        )
+        ECDF_btn1.clicked.connect(lambda: self.plot_ECDF("Radon", "Bq/m³"))
+        ECDF_btn2.clicked.connect(lambda: self.plot_ECDF("VOCs", "ppb"))
+        ECDF_btn3.clicked.connect(lambda: self.plot_ECDF("CO2", "ppm"))
+        ECDF_btn4.clicked.connect(lambda: self.plot_ECDF("O2", "%"))
+        ECDF_btn5.clicked.connect(lambda: self.plot_ECDF("CH4", "%"))
+        ECDF_btn6.clicked.connect(
+            lambda: self.plot_ECDF(self.tr("Functional genes"), "copies/g")
+        )
 
-        # 设置列的拉伸因子
-        Gridlayout.setColumnStretch(0, 1)  # 第一列Label
-        Gridlayout.setColumnStretch(1, 2)  # 第二列文本框（较宽）
-        Gridlayout.setColumnStretch(2, 1)  # 第三列Label
-        Gridlayout.setColumnStretch(3, 1)  # 第四列按钮
-        total_layout = QVBoxLayout()
-        self.help_btn = help_btn()
-        self.next_btn = next_btn()
-        self.next_btn.clicked.connect(self.next_step)
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch(90)
-        btn_layout.addWidget(self.help_btn, alignment=Qt.AlignRight)
-        btn_layout.addStretch(2)
-        btn_layout.addWidget(self.next_btn, alignment=Qt.AlignRight)
-        total_layout.addLayout(Gridlayout)
-        total_layout.addLayout(btn_layout)
-        self.setLayout(total_layout)
+        # 统一设置按钮属性
+        for btn in [
+            kmeans_btn1,
+            kmeans_btn2,
+            kmeans_btn3,
+            kmeans_btn4,
+            kmeans_btn5,
+            kmeans_btn6,
+            ECDF_btn1,
+            ECDF_btn2,
+            ECDF_btn3,
+            ECDF_btn4,
+            ECDF_btn5,
+            ECDF_btn6,
+        ]:
+            btn.setFixedWidth(100)
+            btn.setStyleSheet(
+                """
+                QPushButton {
+                    background-color: #e8e8e8;
+                    border:1px solid #c5c5c5;
+                    padding: 6px; 
+                }
+                QPushButton:hover {
+                    background-color: soild darkgray;
+                }
+            """
+            )
+        # 添加行（保持原有行添加逻辑，但补充缺失的ECDF按钮）
+        rows = [
+            (
+                "Radon:",
+                self.radon_background_value,
+                unit_label1,
+                kmeans_btn1,
+                ECDF_btn1,
+            ),
+            ("VOCs:", self.VOCs_background_value, unit_label2, kmeans_btn2, ECDF_btn2),
+            (
+                "CO<sub>2</sub>:",
+                self.CO2_background_value,
+                unit_label3,
+                kmeans_btn3,
+                ECDF_btn3,
+            ),
+            (
+                "O<sub>2</sub>:",
+                self.O2_background_value,
+                unit_label4,
+                kmeans_btn4,
+                ECDF_btn4,
+            ),
+            (
+                "CH<sub>4</sub>:",
+                self.CH4_background_value,
+                unit_label5,
+                kmeans_btn5,
+                ECDF_btn5,
+            ),
+            (
+                self.tr("Functional genes:"),
+                self.gene_background_value,
+                unit_label6,
+                kmeans_btn6,
+                ECDF_btn6,
+            ),
+        ]
 
+        for row_idx, (label, spinbox, unit, kmeans_btn, ecdf_btn) in enumerate(rows):
+            # 设置标签右对齐
+            lbl = QLabel(label)
+            lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+            # 添加行内容
+            Gridlayout.addWidget(lbl, row_idx, 0)
+            Gridlayout.addWidget(spinbox, row_idx, 1)
+            Gridlayout.addWidget(unit, row_idx, 2)
+            Gridlayout.addWidget(kmeans_btn, row_idx, 3)
+            Gridlayout.addWidget(ecdf_btn, row_idx, 4)
+
+        #
+        self.bottom_buttons = bottom_buttons()
+        self.bottom_buttons.next_btn_clicked.connect(self.next_step)
+        self.bottom_buttons.help_btn_clicked.connect(self.on_help_clicked)
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(15)
+        main_layout.addLayout(Gridlayout)
+        main_layout.addWidget(self.bottom_buttons)
+        self.setLayout(main_layout)
+        center_window(self)
+
+    def do(self):
+        pass
         indices = [
-            i for i, value in enumerate(options) if value == "" or value == "无数据"
+            i
+            for i, value in enumerate(options)
+            # if value == "" or value == "No data available"
+            if value == "No data available"
         ]
         print(indices)
         for i in indices:
@@ -225,7 +310,6 @@ class background_value_input_manual(QWidget):
         self.O2_background_value.setValue(kemans_boundarys[3])
         self.CH4_background_value.setValue(kemans_boundarys[4])
         self.gene_background_value.setValue(kemans_boundarys[5])
-        center_window(self)
 
     def init_kemans(self, gpkg_file, options):
         # options = ["点位", "无数据", "VOCs", "CO2", "O2", "CH4", ""]
@@ -242,10 +326,10 @@ class background_value_input_manual(QWidget):
         kmeans_boundary_gene = get_kemans_boundary(self.gdf, "Functional genes")
 
         # 将kmeans_boundarys保存到文件提供给报告
-        for i, indicator in enumerate(kmeans_indicator):
-            plot_kemans_boundary(
-                self.gdf[indicator].dropna(), indicator, units[i], save=True
-            )
+        # for i, indicator in enumerate(kmeans_indicator):
+        #     plot_kemans_boundary(
+        #         self.gdf[indicator].dropna(), indicator, units[i], save=True
+        #     )
         return [
             kmeans_boundary_radon,
             kmeans_boundary_VOCs,
@@ -255,8 +339,10 @@ class background_value_input_manual(QWidget):
             kmeans_boundary_gene,
         ]
 
+    @property
     def get_final_boundarys(self):
-        return [
+        key = ["radon", "VOCs", "CO2", "O2", "CH4", "Functional_gene"]
+        value = [
             self.radon_background_value.value(),
             self.VOCs_background_value.value(),
             self.CO2_background_value.value(),
@@ -264,6 +350,7 @@ class background_value_input_manual(QWidget):
             self.CH4_background_value.value(),
             self.gene_background_value.value(),
         ]
+        return dict(zip(key, value))
 
     def anomaly_identification(self):
         header = [
@@ -274,12 +361,12 @@ class background_value_input_manual(QWidget):
             "CH4异常高",
             "功能基因异常高",
         ]
-        boundarys = self.get_final_boundarys()
+        boundarys = self.get_final_boundarys
         print(boundarys)
         self.gdf["氡气异常低"] = self.gdf["Radon"].apply(
             lambda x: (
                 "×"
-                if x is not None and x > boundarys[0]  # 大于阈值时赋值为 1
+                if x is not None and x > boundarys.get("radon")  # 大于阈值时赋值为 1
                 else (
                     "√"
                     if x is not None and x <= boundarys[0]  # 小于或等于阈值时赋值为 0
@@ -290,7 +377,7 @@ class background_value_input_manual(QWidget):
         self.gdf["VOCs异常高"] = self.gdf["VOCs"].apply(
             lambda x: (
                 "√"
-                if x is not None and x > boundarys[1]  # 大于阈值时赋值为 1
+                if x is not None and x > boundarys.get("VOCs")  # 大于阈值时赋值为 1
                 else (
                     "×"
                     if x is not None and x <= boundarys[1]  # 小于或等于阈值时赋值为 0
@@ -301,10 +388,11 @@ class background_value_input_manual(QWidget):
         self.gdf["O2异常低"] = self.gdf["O2"].apply(
             lambda x: (
                 "×"
-                if x is not None and x > boundarys[3]  # 大于阈值时赋值为 1
+                if x is not None and x > boundarys.get("O2")  # 大于阈值时赋值为 1
                 else (
                     "√"
-                    if x is not None and x <= boundarys[3]  # 小于或等于阈值时赋值为 0
+                    if x is not None
+                    and x <= boundarys.get("O2")  # 小于或等于阈值时赋值为 0
                     else "⚪"
                 )
             )
@@ -368,6 +456,23 @@ class background_value_input_manual(QWidget):
         from draw_EN import plot_kemans_boundary
 
         plot_kemans_boundary(self.gdf[indicator].dropna(), indicator, unit)
+
+    def plot_ECDF(self, indicator, unit):
+        pass
+        # from draw_EN import plot_ECDF
+
+        # plot_ECDF(self.gdf[indicator].dropna(), indicator, unit)
+
+    def on_help_clicked(self):
+        QMessageBox.information(
+            self,
+            "Help",
+            "This page is used to manually input the background values of various indicators. "
+            "If you are not sure about the background values of the indicators, "
+            "you can use the 'Indicator Data Analysis' button to analyze the data and automatically determine the background values. "
+            "The 'ECDF' button can be used to draw the ECDF diagram of the indicator data. "
+            "After inputting the background values, click the 'Next' button to go to the next step.",
+        )
 
 
 class analyse_win(QWidget):
