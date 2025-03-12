@@ -1,6 +1,6 @@
 import sys
 from enum import Enum
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThreadPool
+from PySide6.QtCore import Qt, QAbstractTableModel, Signal, Slot, QThreadPool, QThread
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -18,16 +18,17 @@ from draw_EN import (
     plot_basic_info,
     read_file_columns,
     point_dataset_preprocess,
-    计算单个指标得分,
-    计算其他土壤气得分,
-    计算总体得分,
+    calculate_ExperienceValueMethod_scores,
     绘制污染源区图,
-    计算污染范围,
     绘制污染范围,
     绘制超标点位,
     污染等级识别,
 )
-from PredefinedData import software_name, Secondary_Functions_of_ExperienceValue
+from PredefinedData import (
+    software_name,
+    Methods,
+    Secondary_Functions_of_ExperienceValue,
+)
 from CustomControl import (
     next_btn,
     help_btn,
@@ -36,14 +37,34 @@ from CustomControl import (
     WrapButton_EN,
     GeoDataFrameModel,
     PlotWindow,
+    bottom_buttons,
+    LoadingWindow,
 )
 from Pyside6Functions import center_window
 
 
+class worker(QThread):
+    finished_signal = Signal()
+    # progress_signal = Signal(int)
+    result_ready = Signal(object)
+
+    def __init__(self, point_dataset, options):
+        super().__init__()
+        self.point_dataset = point_dataset
+        self.options = options
+
+    def run(self):
+        gdf = point_dataset_preprocess(self.point_dataset, self.options)
+        result_gdf = calculate_ExperienceValueMethod_scores(gdf)
+        self.result_ready.emit(result_gdf)
+        self.finished_signal.emit()
+
+
 class Attribute_Window(QWidget):
 
-    def __init__(self, point_dataset, outline_dataset):
+    def __init__(self, point_dataset, outline_dataset, method: Enum):
         super().__init__()
+        self.method = method
         self.thread_pool = QThreadPool.globalInstance()
         self.point_dataset = point_dataset
         self.outline_dataset = outline_dataset
@@ -52,6 +73,7 @@ class Attribute_Window(QWidget):
 
     def initUI(self, options):
         self.setWindowTitle(software_name)
+        self.setGeometry(100, 100, 400, 200)
         self.setMinimumSize(400, 300)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.plot_dataset_info_btn = QPushButton(
@@ -61,21 +83,16 @@ class Attribute_Window(QWidget):
         self.help_btn = help_btn()
         self.next_btn = next_btn()
         self.form_layout = QFormLayout()
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch(90)  # 添加一个拉伸元素，使按钮靠右对齐
-        btn_layout.addWidget(self.help_btn, alignment=Qt.AlignRight)
-        btn_layout.addStretch(2)
-        btn_layout.addWidget(self.next_btn, alignment=Qt.AlignRight)
-        btn_layout.addStretch(8)
-        self.help_btn.clicked.connect(self.on_help_clicked)
-        self.next_btn.clicked.connect(self.on_next_clicked)
+        self.bottom_buttons = bottom_buttons()
+        self.bottom_buttons.next_btn_clicked.connect(self.on_next_clicked)
+        self.bottom_buttons.help_btn_clicked.connect(self.on_help_clicked)
 
         total_layout = QVBoxLayout()
         total_layout.addWidget(self.plot_dataset_info_btn)
         total_layout.addLayout(self.form_layout)
-        total_layout.addLayout(btn_layout)
+        total_layout.addWidget(self.bottom_buttons)
 
-        self.Monitoring_indicators = [
+        indicator_labels = [
             self.tr("Point number"),
             self.tr("Radon"),
             "VOCs",
@@ -88,14 +105,26 @@ class Attribute_Window(QWidget):
         ]
         for i in range(9):
             combo = CustomComboBox(options, i)
-            self.form_layout.addRow(f"{self.Monitoring_indicators[i]}:", combo)
+            self.form_layout.addRow(f"{indicator_labels[i]}:", combo)
             self.combos.append(combo)
         self.set_initial_selections(options)
+        self.method_control_combos(self.method)
         self.setLayout(total_layout)
         center_window(self)
 
     def set_initial_selections(self, options):
-        for i, data in enumerate(self.Monitoring_indicators):
+        Monitoring_indicators = [
+            "Point_code",
+            "Radon",
+            "VOCs",
+            "CO2",
+            "O2",
+            "CH4",
+            "H2",
+            "H2S",
+            "Functional genes",
+        ]
+        for i, data in enumerate(Monitoring_indicators):
             if data in options:
                 index = options.index(data)
                 self.combos[i].setCurrentIndex(index)
@@ -118,14 +147,34 @@ class Attribute_Window(QWidget):
         msg_box.exec_()
 
     def on_next_clicked(self):
-        self.hide()
+
         contents = self.get_combos_content()
+
+        self.loading_window = LoadingWindow()
+        self.loading_window.show()
+        self.worker = worker(self.point_dataset, contents)
+        self.worker.result_ready.connect(self.on_worker_result_ready)
+        self.worker.finished_signal.connect(self.worker.deleteLater)
+        self.worker.start()
+        # self.Contamination_identification_win = Contamination_identification_win(
+        #     options=contents,
+        #     point_dataset=self.point_dataset,
+        #     outline_dataset=self.outline_dataset,
+        # )
+        # self.Contamination_identification_win.show()
+        # self.close()
+
+    @Slot(object)
+    def on_worker_result_ready(self, result_gdf):
+        if self.loading_window:
+            self.loading_window.close()
+            self.loading_window = None
         self.Contamination_identification_win = Contamination_identification_win(
-            options=contents,
-            point_dataset=self.point_dataset,
+            result_gdf=result_gdf,
             outline_dataset=self.outline_dataset,
         )
         self.Contamination_identification_win.show()
+        self.close()
 
     def plot_dataset_info(self):
         fig = plot_basic_info(
@@ -137,14 +186,17 @@ class Attribute_Window(QWidget):
     def get_combos_content(self):
         return [combo.currentText() for combo in self.combos]
 
+    def method_control_combos(self, method):
+        if method == Methods.Experience_value_method:
+            self.combos[-1].setEnabled(False)
+
 
 class Contamination_identification_win(QWidget):
 
-    def __init__(self, options, point_dataset, outline_dataset):
+    def __init__(self, result_gdf, outline_dataset):
         super().__init__()
-        self.point_dataset = point_dataset
+        self.result_gdf = result_gdf
         self.outline_dataset = outline_dataset
-        self.options = options
         self.initUI()
 
     def initUI(self):
@@ -153,10 +205,6 @@ class Contamination_identification_win(QWidget):
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         center_window(self)
         self.exit_btn = QPushButton(self.tr("Quit"))
-        # self.function1_btn = WrapButton(self.tr("指示污染超标范围点位（除氡气）"))
-        # self.function2_btn = WrapButton(self.tr("污染源区与疑似污染源区"))
-        # self.function4_btn = WrapButton(self.tr("污染范围"))
-        # self.function5_btn = WrapButton(self.tr("污染等级识别"))
         self.function1_btn = WrapButton_EN(
             self.tr("Pollution exceedance points (except radon gas)")
         )
@@ -165,10 +213,6 @@ class Contamination_identification_win(QWidget):
         )
         self.function4_btn = WrapButton_EN(self.tr("Scope of contamination"))
         self.function5_btn = WrapButton_EN(self.tr("Pollution level identification"))
-        # self.function1_btn.setFixedSize(150, 60)
-        # self.function2_btn.setFixedSize(150, 60)
-        # self.function4_btn.setFixedSize(150, 60)
-        # self.function5_btn.setFixedSize(150, 60)
 
         # 功能连接
         self.exit_btn.clicked.connect(self.close)
@@ -176,14 +220,7 @@ class Contamination_identification_win(QWidget):
         self.function2_btn.clicked.connect(self.function_PSA)
         self.function4_btn.clicked.connect(self.function_SOC)
         self.function5_btn.clicked.connect(self.function_PLI)
-        # 布局
-        # CN Layput
-        # btn_layout = QGridLayout()
-        # btn_layout.addWidget(self.function1_btn, 1, 1)
-        # btn_layout.addWidget(self.function2_btn, 1, 2)
-        # btn_layout.addWidget(self.function4_btn, 2, 1)
-        # btn_layout.addWidget(self.function5_btn, 2, 2)
-        # EN Layout
+        # Layout
         btn_layout = QVBoxLayout()
         btn_layout.addWidget(self.function1_btn)
         btn_layout.addWidget(self.function2_btn)
@@ -199,10 +236,7 @@ class Contamination_identification_win(QWidget):
         self.setLayout(v_layout)
 
     def function_PCP(self):
-        gdf = point_dataset_preprocess(self.point_dataset, self.options)
-        gdf = 计算单个指标得分(gdf)
-        gdf["The_other_soil_gas_scores"] = gdf.apply(计算其他土壤气得分, axis=1)
-        display_gdf = gdf[gdf["The_other_soil_gas_scores"] >= 6]
+        display_gdf = self.result_gdf[self.result_gdf["The_other_soil_gas_scores"] >= 6]
         self.result_win1 = function_win(
             display_gdf,
             columns_to_display=[
@@ -215,16 +249,16 @@ class Contamination_identification_win(QWidget):
                 "H2S_Score",
                 "The_other_soil_gas_scores",
             ],
-            all_gdf=display_gdf,
+            all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_PCP,
         )
         self.result_win1.show()
 
     def function_PSA(self):
-        gdf = point_dataset_preprocess(self.point_dataset, self.options)
-        gdf = 计算总体得分(gdf)
-        dis_play_gdf = gdf[gdf["The_other_soil_gas_scores"] >= 6]
+        dis_play_gdf = self.result_gdf[
+            self.result_gdf["The_other_soil_gas_scores"] >= 6
+        ]
         self.result_win2 = function_win(
             dis_play_gdf,
             columns_to_display=[
@@ -234,39 +268,40 @@ class Contamination_identification_win(QWidget):
                 "All_indicators_Scores",
             ],
             # ["点位编号", "其他土壤气得分", "氡气赋分", "所有指标得分"],
-            all_gdf=gdf,
+            all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_PSA,
         )
         self.result_win2.show()
 
     def function_SOC(self):
-        gdf = 计算污染范围(self.point_dataset, self.options)
+        # gdf = 计算污染范围(self.point_dataset, self.options)
         self.result_win4 = function_win(
-            display_gdf=gdf,
+            display_gdf=self.result_gdf,
             columns_to_display=[
                 "Point_Code",
                 "The_other_soil_gas_scores",
                 "Scope_of_contamination",
             ],
             # columns_to_display=["点位编号", "其他土壤气得分", "得分≥1"],
-            all_gdf=gdf,
+            all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_SOC,
         )
         self.result_win4.show()
 
     def function_PLI(self):
-        gdf = point_dataset_preprocess(
-            self.point_dataset,
-            self.options,
-        )
+        pass
+        # gdf = point_dataset_preprocess(
+        #     self.point_dataset,
+        #     self.options,
+        # )
 
-        gdf = 计算总体得分(gdf)
-        污染等级识别(
-            gdf,
-            self.outline_dataset,
-        )
+        # gdf = 计算总体得分(gdf)
+        # 污染等级识别(
+        #     gdf,
+        #     self.outline_dataset,
+        # )
 
 
 class function_win(QWidget):

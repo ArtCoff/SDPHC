@@ -30,6 +30,12 @@ class Start_Window(QWidget):
         super(Start_Window, self).__init__(parent)
         self.thread_pool = QThreadPool.globalInstance()
         self.initUI()
+        self.attribute_window_factory = {
+            Methods.Experience_value_method: Attribute_Window,
+            Methods.Background_value_method: Attribute_Window_BackgroundValue,
+            Methods.PCA_method: Attribute_Window_PCA,
+        }
+        self.current_attribute_window = None
 
     def initUI(self):
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
@@ -94,30 +100,28 @@ class Start_Window(QWidget):
         msg_box.exec_()
 
     def on_next_clicked(self):
+        # 检查输入数据集
         if not self.point_dataset.text():
             QMessageBox.critical(
                 self, "Dataset Error", self.tr("Survey point data should not be empty.")
             )
             return
-
-        if self.current_method_status == Methods.Experience_value_method:
-            self.attribute_window = Attribute_Window(
-                point_dataset=self.point_dataset.text(),
-                outline_dataset=self.outline_dataset.text(),
-            )
-            self.attribute_window.show()
-        elif self.current_method_status == Methods.Background_value_method:
-            self.KmeansWin = Attribute_Window_BackgroundValue(
-                self.point_dataset.text(),
-                self.outline_dataset.text(),
-            )
-            self.KmeansWin.show()
-        elif self.current_method_status == Methods.PCA_method:
-            self.attribute_window_PCA = Attribute_Window_PCA(
-                self.point_dataset.text(),
-                self.outline_dataset.text(),
-            )
-            self.attribute_window_PCA.show()
+        attribute_window_class = self.attribute_window_factory.get(
+            self.current_method_status
+        )
+        if not attribute_window_class:
+            QMessageBox.critical(self, "Error", "Unsupported method selected")
+            return
+        attribute_window_args = {
+            "point_dataset": self.point_dataset.text(),
+            "outline_dataset": self.outline_dataset.text(),
+            "method": self.current_method_status,
+        }
+        # 如果当前有窗口打开，关闭当前窗口
+        if self.current_attribute_window:
+            self.current_attribute_window.close()
+        self.current_attribute_window = attribute_window_class(**attribute_window_args)
+        self.current_attribute_window.show()
         self.close()
 
     def update_method(self, method):

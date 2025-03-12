@@ -1,7 +1,7 @@
 import sys
 from enum import Enum
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal
+from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThread
 from PySide6.QtWidgets import (
     QMessageBox,
     QWidget,
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from draw_EN import (
+    point_dataset_preprocess,
     process_PCA,
     plot_PCA_variance_contribution,
     plot_PCA_loading_plot,
@@ -23,6 +24,24 @@ from PredefinedData import software_name
 from CustomControl import next_btn, help_btn, check_btn, Interpolation_method_selection
 from Pyside6Functions import center_window
 from Method_ExperienceValue import Attribute_Window
+
+
+class worker(QThread):
+    finished_signal = Signal()
+    result_ready = Signal(object)
+
+    def __init__(self, point_dataset, options):
+        super().__init__()
+        self.point_dataset = point_dataset
+        self.options = options
+
+    def run(self):
+        gdf = point_dataset_preprocess(self.point_dataset, self.options)
+        # 执行PCA分析
+        # 返回绘图对象结果
+        result_gdf = gdf
+        self.result_ready.emit(result_gdf)
+        self.finished_signal.emit()
 
 
 class Attribute_Window_PCA(Attribute_Window):

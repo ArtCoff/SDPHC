@@ -3,55 +3,6 @@ import geopandas as gpd
 import numpy as np
 from PredefinedData import EPSG_code
 
-Monitoring_indicators = [
-    "Radon",
-    "VOCs",
-    "CO2",
-    "O2",
-    "CH4",
-    "H2",
-    "H2S",
-]  # 氡气 VOCs CO2 O2 CH4 H2 H2S
-Less_indicators = [
-    "VOCs",
-    "CO2",
-    "O2",
-    "CH4",
-    "H2",
-    "H2S",
-]  #  VOCs CO2 O2 CH4 H2 H2S
-
-abnormal_indicators_values = {
-    "A": [15, 100, 0.1, 0.01, 0.05, 1000, 10],
-    "B": [150, 10, 0.05, 0.1, 0.01, 500, 5],
-    "C": [1500, 1, 0.01, 0.19, 0.0025, 100, 1],
-    "D": [3000, 0.1, 0.001, 0.2, 0.0001, 10, 0.1],
-}  # 极度异常	高度异常	异常	轻微异常
-
-abnormal_score = {
-    "A": [11, 22, 22, 11, 22, 11, 11],
-    "B": [3, 6, 6, 3, 6, 3, 3],
-    "C": [1, 2, 2, 1, 2, 1, 1],
-    "D": [0, 1, 0, 0, 1, 0, 0],
-}  # 极度异常	高度异常	异常	轻微异常
-Anomaly_value_Scale = pd.DataFrame(
-    data=abnormal_indicators_values, index=Monitoring_indicators
-)
-Anomaly_Rating_Scale = pd.DataFrame(data=abnormal_score, index=Monitoring_indicators)
-
-
-# def add_north_arrow(ax, x=0.1, y=0.9, size=20):
-#     ax.annotate(
-#         "N",
-#         xy=(x, y),
-#         xytext=(x, y - 0.1),
-#         arrowprops=dict(facecolor="black", width=3, headwidth=15),
-#         ha="center",
-#         va="center",
-#         fontsize=size,
-#         xycoords="axes fraction",
-#     )
-
 
 # 添加指北针 (North Arrow)
 def add_north_arrow(ax):
@@ -127,27 +78,112 @@ def get_gdf_options(datapoints_shp):
     return options
 
 
-def calculate_single_indicator_score(value, indicator):
-    score = 0
-    if indicator in ["VOCs", "CO2", "CH4", "H2", "H2S"]:  # 高值异常
-        if value >= Anomaly_value_Scale.loc[indicator, "A"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "A"]
-        elif value >= Anomaly_value_Scale.loc[indicator, "B"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "B"]
-        elif value >= Anomaly_value_Scale.loc[indicator, "C"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "C"]
-        elif value >= Anomaly_value_Scale.loc[indicator, "D"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "D"]
-    elif indicator in ["O2", "Radon"]:  # 低值异常
-        if value <= Anomaly_value_Scale.loc[indicator, "A"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "A"]
-        elif value <= Anomaly_value_Scale.loc[indicator, "B"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "B"]
-        elif value <= Anomaly_value_Scale.loc[indicator, "C"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "C"]
-        elif value <= Anomaly_value_Scale.loc[indicator, "D"]:
-            score = Anomaly_Rating_Scale.loc[indicator, "D"]
-    return score
+# * Experience Value Method
+Monitoring_indicators = [
+    "Radon",
+    "VOCs",
+    "CO2",
+    "O2",
+    "CH4",
+    "H2",
+    "H2S",
+]  # 氡气 VOCs CO2 O2 CH4 H2 H2S
+# 评分区间严格升序排列；得分数量=区间分界值数量+1；使用bool控制该分界值在左区间的开闭状态
+Radon_score = {
+    "breakpoint": [(15, True), (150, True), (1500, True)],
+    "score": [11, 3, 1, 0],
+}
+VOCs_score = {
+    "breakpoint": [(0.1, False), (1, False), (10, False), (100, False)],
+    "score": [0, 1, 2, 6, 22],
+}
+CO2_score = {
+    "breakpoint": [(0.01, False), (0.05, False), (0.1, False)],
+    "score": [0, 2, 6, 22],
+}
+O2_score = {
+    "breakpoint": [(0.01, True), (0.1, True), (0.19, True)],
+    "score": [11, 3, 1, 0],
+}
+CH4_score = {
+    "breakpoint": [(0.0001, False), (0.0025, False), (0.01, False), (0.05, False)],
+    "score": [0, 1, 2, 6, 22],
+}
+H2_score = {
+    "breakpoint": [(100, False), (500, False), (1000, False)],
+    "score": [0, 1, 3, 11],
+}
+H2S_score = {
+    "breakpoint": [(1, False), (5, False), (10, False)],
+    "score": [0, 1, 3, 11],
+}
+abnormal_score_config = dict(
+    zip(
+        Monitoring_indicators,
+        [Radon_score, VOCs_score, CO2_score, O2_score, CH4_score, H2_score, H2S_score],
+    )
+)
+
+
+def calculate_score(
+    sample_data: dict, abnormal_score_config: dict = abnormal_score_config
+):
+    """
+    计算采样点总得分并返回详细得分报告
+
+    参数:
+    sample_data (dict): 采样点数据，格式{'指标名': 数值}
+
+    返回:
+    dict: 包含各指标得分缺失数据为None和总得分的字典
+    """
+    result = {}
+    other_soil_gas = [
+        "VOCs",
+        "CO2",
+        "O2",
+        "CH4",
+        "H2",
+        "H2S",
+    ]
+    other_soil_gas_scores = 0
+
+    # 遍历所有配置的指标
+    for indicator in abnormal_score_config:
+        # 处理缺失数据
+        if indicator not in sample_data:
+            result[f"{indicator}_Score"] = None
+            continue
+
+        value = sample_data[indicator]
+        config = abnormal_score_config[indicator]
+        breakpoints = config["breakpoint"]
+        scores = config["score"]
+
+        # 区间判断逻辑
+        index = None
+        for i, (bp, left_incl) in enumerate(breakpoints):
+            if (value < bp) or (value == bp and not left_incl):
+                index = i
+                break
+        else:
+            index = len(breakpoints)
+
+        # 记录得分
+        score = scores[index]
+        result[f"{indicator}_Score"] = score
+    # 计算其他土壤气得分
+    for indicator in other_soil_gas:
+        if result[f"{indicator}_Score"] is not None:
+            other_soil_gas_scores += result[f"{indicator}_Score"]
+    result["The_other_soil_gas_scores"] = other_soil_gas_scores
+
+    # 计算总体得分;只有其他土壤气得分大于等于≥6的点位才会测量Radon指标，进而计算所有指标得分，进而划分污染源区、疑似污染源区
+    if result["The_other_soil_gas_scores"] >= 6 and result["Radon_Score"] is not None:
+        result["All_indicators_Scores"] = (
+            result["The_other_soil_gas_scores"] + result["Radon_Score"]
+        )
+    return result
 
 
 def point_dataset_preprocess(point_dataset, options):
@@ -196,46 +232,49 @@ def point_dataset_preprocess(point_dataset, options):
     return gdf
 
 
-def 计算单个指标得分(gdf):
-    for indicator in Less_indicators:
-        score_column_name = f"{indicator}_Score"
-        gdf[score_column_name] = gdf[indicator].apply(
-            lambda x: calculate_single_indicator_score(x, indicator)
-        )
-    return gdf
+def calculate_ExperienceValueMethod_scores(
+    gdf, abnormal_score_config: dict = abnormal_score_config
+):
+    """
+    为DataFrame每一行计算得分并追加结果
 
+    参数:
+    gdf (gpd.DataFrame): 原始数据
+    score_map (dict): 评分规则字典（与之前相同）
+    indicators (list): 需要计算的指标列名列表，若为None则使用score_map的所有键
 
-def 计算其他土壤气得分(row):
-    Score_without_Radon = 0
-    for indicator_score in [f"{indicator}_Score" for indicator in Less_indicators]:
-        Score_without_Radon += row[indicator_score]
-    return Score_without_Radon
+    返回:
+    gpd.DataFrame: 包含原始数据和新增得分列的DataFrame
+    """
+    # 确定需要处理的指标列
+    indicators = list(abnormal_score_config.keys())
 
+    # 验证指标列是否存在
+    for col in indicators:
+        if col not in gdf.columns:
+            raise KeyError(f"KeyError:{col}")
 
-def 指示污染超标范围点位(gdf):
-    gdf = 计算单个指标得分(gdf)
-    gdf["The_other_soil_gas_scores"] = gdf.apply(计算其他土壤气得分, axis=1)
-    return gdf
+    # 定义行处理函数
+    def process_row(row):
+        # 提取当前行的指标数据
+        sample_data = row[indicators].dropna().to_dict()  # 自动处理NaN值
+        # 计算得分
+        result = calculate_score(sample_data)
+        return pd.Series(result)
 
-
-# 只有其他土壤气得分大于等于≥6的点位才会测量Radon指标，进而计算所有指标得分，进而划分污染源区、疑似污染源区
-def 计算所有指标得分(row):
-    Score = 0
-    Score += row["The_other_soil_gas_scores"]
-    if row["The_other_soil_gas_scores"] >= 6:
-        Score += row["Radon_Score"]
-    return Score
-
-
-def 计算总体得分(gdf):
-    gdf = 指示污染超标范围点位(gdf)  # 计算其他土壤气得分
-    # gdf = gdf[gdf["The_Other_soil_gas_scores"] >= 6]  # 筛选出大于等于6的点位
-    gdf["Radon_Score"] = gdf["Radon"].apply(
-        lambda x: calculate_single_indicator_score(x, "Radon")
-    )  # 计算氡气赋分
-    gdf["All_indicators_Scores"] = gdf.apply(计算所有指标得分, axis=1)
+    # 执行计算并合并结果
+    gdf = gdf.join(gdf.apply(process_row, axis=1))
     gdf["Contamination_type"] = gdf.apply(计算单个污染类型, axis=1)
+    gdf["Scope_of_contamination"] = gdf.apply(判断污染范围, axis=1)
+
     return gdf
+
+
+def 判断污染范围(row):
+    if row["The_other_soil_gas_scores"] >= 1:
+        return 1
+    else:
+        return 0
 
 
 def 计算单个污染类型(row):
@@ -314,21 +353,6 @@ def 绘制污染源区图(gdf, boundary_polygon_file):
     ]
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.show()
-
-
-def 判断污染范围(row):
-    if row["The_other_soil_gas_scores"] >= 1:
-        return 1
-    else:
-        return 0
-
-
-def 计算污染范围(file_path, options):
-    gdf = point_dataset_preprocess(file_path, options)
-    gdf = 指示污染超标范围点位(gdf)
-    gdf = 计算总体得分(gdf)
-    gdf["Scope_of_contamination"] = gdf.apply(判断污染范围, axis=1)
-    return gdf
 
 
 def 绘制污染范围(gdf, boundary_polygon_file, epsg_code=EPSG_code):
@@ -761,8 +785,8 @@ def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
 
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
-    ax.set_xlabel("X 投影坐标 (米)")
-    ax.set_ylabel("Y 投影坐标 (米)")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
     # 添加自定义图例
     legend_elements = []
     if "污染源" in gdf["污染类型"].unique():
@@ -814,6 +838,7 @@ def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
         plt.show()
 
 
+# * 用于报告生成的函数
 def 绘制点位分布(gdf, boundary_polygon_file=None):
     import geopandas as gpd
     import matplotlib

@@ -1,5 +1,5 @@
 import sys
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal
+from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThread
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -41,12 +41,33 @@ from CustomControl import LoadingWindow
 from auto_report_CN import auto_report
 
 
+class worker(QThread):
+    finished_signal = Signal()
+    result_ready = Signal(object)
+
+    def __init__(self, point_dataset, options):
+        super().__init__()
+        self.point_dataset = point_dataset
+        self.options = options
+
+    def run(self):
+        gdf = point_dataset_preprocess(self.point_dataset, self.options)
+        # 返回ECDF绘图对象
+        # 返回Kmeans绘图对象和边界值
+        # 返回预处理的gdf
+        # 返回异常点位绘图对象
+        result_gdf = gdf
+        self.result_ready.emit(result_gdf)
+        self.finished_signal.emit()
+
+
 class Attribute_Window_BackgroundValue(Attribute_Window):
 
-    def __init__(self, point_dataset, outline_dataset):
+    def __init__(self, point_dataset, outline_dataset, method):
         super().__init__(
             point_dataset=point_dataset,
             outline_dataset=outline_dataset,
+            method=method,
         )
         self.point_dataset = point_dataset
         self.outline_dataset = outline_dataset

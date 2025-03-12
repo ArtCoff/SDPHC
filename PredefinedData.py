@@ -1,12 +1,6 @@
 from enum import Enum
 
 software_name = "MIM LNAP Pollution Aid Identification Software"
-#
-# MethodsCode = {
-#     "Experience value method": "M1",
-#     "Background value method": "M2",
-#     "PCA method": "M3",
-# }
 
 EPSG_code = 4547
 
