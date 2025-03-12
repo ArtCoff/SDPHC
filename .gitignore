@@ -5,6 +5,8 @@
 /node_modules
 /build
 /__pycache__
+/ref
+/pic
 
 # 忽略临时文件夹（递归匹配所有子目录中的 tmp 文件夹）
 **/tmp
