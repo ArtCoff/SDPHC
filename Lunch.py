@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QFormLayout,
 )
-from PredefinedData import software_name, Methods
+from PredefinedData import Software_info, Methods
 from Pyside6Functions import center_window, title_font
 from CustomControl import (
     file_line_edit,
@@ -28,7 +28,6 @@ from Method_PCA import Attribute_Window_PCA
 class Start_Window(QWidget):
     def __init__(self, parent=None):
         super(Start_Window, self).__init__(parent)
-        self.thread_pool = QThreadPool.globalInstance()
         self.initUI()
         self.attribute_window_factory = {
             Methods.Experience_value_method: Attribute_Window,
@@ -39,7 +38,7 @@ class Start_Window(QWidget):
 
     def initUI(self):
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        self.setWindowTitle(self.tr(software_name))
+        self.setWindowTitle(self.tr(Software_info.software_name))
 
         self.setMinimumSize(400, 300)
         self.language_switcher = LanguageSwitcher()
@@ -133,17 +132,44 @@ class Start_Window(QWidget):
         # self.language_switcher.update_button_text()
 
 
+# 读取配置文件 settings.txt 的函数
+def load_settings():
+    """
+    从 settings.txt 文件中读取配置参数。
+    :return: 配置字典
+    """
+    settings = {}
+    settings_path = os.path.abspath("settings.txt")  # 获取根目录下的 settings.txt
+    if not os.path.exists(settings_path):
+        print("配置文件 settings.txt 不存在，使用默认值。")
+        return settings
+
+    with open(settings_path, "r", encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+            if line and not line.startswith("#"):  # 跳过注释和空行
+                try:
+                    key, value = line.split("=", 1)  # 分割键值对
+                    key = key.strip().strip('"')  # 去除多余的引号和空格
+                    value = value.strip().strip('"')
+                    settings[key] = value
+                except ValueError:
+                    print(f"忽略无效配置行：{line}")
+    return settings
+
+
 if __name__ == "__main__":
     import os
 
-    os.environ["QT_SCALE_FACTOR"] = "1.00"
+    settings = load_settings()
+    qt_scale_factor = settings.get("QT_SCALE_FACTOR", "1.00")
+    os.environ["QT_SCALE_FACTOR"] = qt_scale_factor
     app = QApplication(sys.argv)
 
     # 正确获取主屏幕
-    # screen = app.primaryScreen()
-    # scale_factor = screen.devicePixelRatio()
-    # print(f"Scale Factor: {scale_factor}")
-    app.setFont(QFont("Arial", 12))
+    font_family = settings.get("FONT_FAMILY", "Arial")
+    font_size = int(settings.get("FONT_SIZE", "12"))
+    app.setFont(QFont(font_family, font_size))
     main = Start_Window()
     main.show()
     sys.exit(app.exec())

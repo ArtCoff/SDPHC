@@ -1,0 +1,5 @@
+#通过控制"QT_SCALE_FACTOR"可以解决大部分软件界面问题，请任意修改以获得最佳视觉效果
+#Most of the software interface problems can be solved by controlling "QT_SCALE_FACTOR", please feel free to modify it to get the best visual effect.
+"QT_SCALE_FACTOR"=1.00
+"FONT_FAMILY"="Arial"
+"FONT_SIZE"=10

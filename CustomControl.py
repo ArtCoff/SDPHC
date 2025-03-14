@@ -124,6 +124,13 @@ class CustomComboBox(QComboBox):
         self.index = index
 
 
+class background_value_input_doublespinbox(QDoubleSpinBox):
+    def __init__(self, range):
+        super().__init__()
+        self.setRange(0.0, range)
+        self.setDecimals(4)
+
+
 # class CustomComboBox_v2(QComboBox):
 #     def __init__(self, options, index, parent=None):
 #         super().__init__(parent)
@@ -391,16 +398,16 @@ class PlotWindow(QWidget):
         self.setGeometry(100, 100, 400, 300)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setMinimumSize(400, 300)
+        # self.setAttribute(Qt.WA_DeleteOnClose)  # 关闭时自动释放资源
 
         # 创建绘图区域
         self.canvas = None
         self.toolbar = None
-
-        # 生成图形
         self.fig = fig
+        # 安全初始化
         if not self.fig:
-            QMessageBox.critical(self, "Error", "Failed to generate plot")
-            return
+            QMessageBox.critical(self, "Error", self.tr("Invalid graphic objects"))
+            self.close()
 
         # 设置界面
         self.setup_ui()
@@ -415,6 +422,17 @@ class PlotWindow(QWidget):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
+
+    def closeEvent(self, event):
+        """重写关闭事件，确保资源释放"""
+        if self.canvas:
+            self.canvas.close()  # 关闭画布
+            self.canvas = None
+        if self.fig:
+            self.fig.clf()  # 清除图形
+            self.fig = None
+        self.deleteLater()  # 强制释放资源
+        super().closeEvent(event)
 
 
 if __name__ == "__main__":

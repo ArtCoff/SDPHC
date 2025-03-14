@@ -1,8 +1,27 @@
 from enum import Enum
 
-software_name = "MIM LNAP Pollution Aid Identification Software"
 
-EPSG_code = 4547
+class Software_info:
+    software_name = "MIM LNAP Pollution Aid Identification Software"
+    software_version = "1.0.0"
+    software_author = "Hefei University of Technology"
+    software_email = ""
+    software_website = ""
+
+
+class Drawing_specifications:
+    EPSG_code = 4547
+
+
+class MIM_indicators(Enum):
+    Radon = "Radon"
+    VOCs = "VOCs"
+    CO2 = "CO2"
+    O2 = "O2"
+    CH4 = "CH4"
+    H2S = "H2S"
+    H2 = "H2"
+    FG = "Functional genes"
 
 
 class Methods(Enum):

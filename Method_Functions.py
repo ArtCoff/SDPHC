@@ -1,7 +1,11 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from PredefinedData import EPSG_code
+from PredefinedData import MIM_indicators, Drawing_specifications
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 
 # 添加指北针 (North Arrow)
@@ -35,7 +39,9 @@ def add_scalebar(ax, location="lower left"):
     ax.add_artist(scalebar)
 
 
-def plot_basic_info(point_dataset, outline_dataset, epsg_code=EPSG_code):
+def plot_basic_info(
+    point_dataset, outline_dataset, epsg_code=Drawing_specifications.EPSG_code
+):
     import geopandas as gpd
     from matplotlib import ticker, rcParams
     from matplotlib.figure import Figure
@@ -566,130 +572,488 @@ def compute_ecdf(data):
     return sorted_data, cum_prob
 
 
-def draw_ECDF(data, value, unit, save=False, attribute: str = " "):
-    import numpy as np
-    import matplotlib.pyplot as plt
+def draw_ECDF(
+    data,
+    param_name="",
+    unit="",
+):
+    fig = Figure(figsize=(10, 5))  # 创建一个 Figure 对象
+    ax = fig.add_subplot(111)
 
-    # 绘制 ECDF
-    def plot_ecdf(data, ax=None, **kwargs):
-        sorted_data, cum_prob = compute_ecdf(data)
-        if ax is None:
-            fig, ax = plt.subplots(figsize=(10, 5))
-        # 绘制阶梯图
-        ax.step(sorted_data, cum_prob, where="post", **kwargs)
-        ax.scatter(sorted_data, cum_prob, s=2, color="red", zorder=2, label="points")
-        ax.set_xlabel("value")
-        ax.set_ylabel("ECDF")
-        ax.set_title(attribute)
-        ax.grid(True)
-        ax.legend()
-        return ax
-
-    # 执行绘图
-    plot_ecdf(data)
-    plt.show()
+    sorted_data, cum_prob = compute_ecdf(data)
+    ax.step(sorted_data, cum_prob, where="post", label="ECDF")
+    ax.scatter(sorted_data, cum_prob, s=2, color="red", zorder=2, label="Points")
+    ax.set_xlabel(f"{param_name} ({unit})" if unit else param_name)
+    ax.set_ylabel("ECDF")
+    ax.set_title(f"{param_name} ECDF Analysis")
+    ax.grid(True)
+    ax.legend()
+    return fig
 
 
-def get_kemans_boundary(gdf, column):
+def draw_KMeans_cluster(data, param_name="", unit="", random_state=0):
     import numpy as np
     from sklearn.cluster import KMeans
     import geopandas as gpd
 
-    data = gdf[column].dropna().tolist()
+    """
+    对输入的一组数据进行 KMeans 聚类，返回分界点和绘图对象。
+
+    :param data: 输入的一组数据（列表、NumPy 数组等）
+    :param param_name: 参数名称（用于显示）
+    :param unit: 单位（用于坐标轴标签）
+    :param random_state: KMeans 随机种子
+    :return: (boundary, FigureCanvas)
+    """
     # 将数据转换为二维数组
     data = np.array(data).reshape(-1, 1)
-    if data.size == 0:
-        return 0.00
-    # KMeans 聚类，设定为 2 类
-    kmeans = KMeans(n_clusters=2, random_state=0).fit(data)
+    if len(data) == 0:
+        raise ValueError("输入数据不能为空")
 
-    # 获取聚类中心
+    # KMeans 聚类
+    kmeans = KMeans(n_clusters=2, random_state=random_state).fit(data)
     centers = kmeans.cluster_centers_.flatten()
-    # 找到第一类（较小的类）的标签
-    first_class_label = np.argmin(centers)
-    # 选择第一类的数据，并取其最大值作为分界点
-    labels = kmeans.labels_
-    boundary = data[labels == first_class_label].max()
-    boundary = np.mean(centers)  # 用聚类中心的中值作为分界点
-    return boundary
+    boundary = np.mean(centers)  # 使用聚类中心的均值作为分界点
 
+    # 创建绘图对象
+    fig = Figure(figsize=(8, 6), dpi=90)
+    ax = fig.add_subplot(111)
 
-def plot_kemans_boundary(data, value, unit, save=False):
-    import numpy as np
+    # 绘制数据点
     from collections import Counter
-    from sklearn.cluster import KMeans
-    import matplotlib.pyplot as plt
 
-    if data.size == 0:
-        return
-    # 将数据转换为二维数组
-    data = np.array(data).reshape(-1, 1)
-
-    # KMeans 聚类，设定为 2 类
-    kmeans = KMeans(n_clusters=2, random_state=0).fit(data)
-
-    # 获取聚类中心
-    centers = kmeans.cluster_centers_.flatten()
-    boundary = np.mean(centers)  # 用聚类中心的中值作为分界点
-
-    # 根据标签划分数据
-    labels = kmeans.labels_
-    lower_part = data[labels == np.argmin(centers)].flatten()
-    upper_part = data[labels == np.argmax(centers)].flatten()
-
-    # 统计数据点的出现次数
     data_counts = Counter(data.flatten())
-    # 设置全局字体
-    plt.rcParams["font.family"] = "Times New Roman"  # 仿宋
-    plt.rcParams["axes.unicode_minus"] = False  # 正常显示负号
-    # 绘制结果图像
-    plt.figure(figsize=(8, 6), dpi=90)
     for point, count in data_counts.items():
-        # 分别绘制 lower_part 和 upper_part 的数据点
-        if point in lower_part:
-            plt.scatter(
-                point,
-                0,
-                color="blue",
-                s=50,
-                label="Part Ⅰ" if point == lower_part[0] else "",
-            )
-        if point in upper_part:
-            plt.scatter(
-                point,
-                0,
-                color="orange",
-                s=50,
-                label="Part Ⅱ" if point == upper_part[0] else "",
-            )
+        # 根据所属聚类分配颜色
+        color = "blue" if point <= boundary else "orange"
+        label = (
+            "Part Ⅰ"
+            if (point == min(data)) and color == "blue"
+            else "Part Ⅱ" if (point == max(data)) and color == "orange" else ""
+        )
 
-        # 如果数据点重复，标注数量
+        ax.scatter(point, 0, color=color, s=50, label=label)
+
+        # 显示重复点计数
         if count > 1:
-            plt.text(
-                point,
-                0.005,
-                f"{count}",
-                ha="center",
-                color="black",
-                fontsize=10,
-                va="top",
-            )
+            ax.text(point, 0.005, f"{count}", ha="center", va="bottom", fontsize=10)
 
-    # 标注簇中心
-    plt.scatter(centers, [0, 0], color="red", s=100, marker="x", label="Cluster center")
-    # 标注分界线
-    plt.axvline(boundary, color="green", linestyle="--", label="Cut-off value")
-    plt.text(boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=20)
-    # 添加图例和标签
-    plt.legend(fontsize=10, ncol=2)
-    plt.xticks(fontsize=15)
-    plt.yticks([])
-    plt.xlabel(f"{value}({unit})", fontsize=15)
-    if save:
-        plt.savefig(f"./ref/KMEANS-{value}.png")
-        return
-    else:
-        plt.show()
+    # 绘制中心点和分界线
+    ax.scatter(
+        centers,
+        [0] * len(centers),
+        color="red",
+        s=100,
+        marker="x",
+        label="Cluster Center",
+    )
+    ax.axvline(boundary, color="green", linestyle="--", label="Cut-off Value")
+    ax.text(boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=12)
+
+    # 设置图表属性
+    ax.set_title(
+        f"{param_name} KMeans cluster analysis"
+        if param_name
+        else "KMeans cluster analysis"
+    )
+    ax.set_xlabel(f"{param_name} ({unit})" if unit else param_name)
+    ax.set_yticks([])
+    ax.grid(axis="x", linestyle="--")
+    ax.legend(ncol=2, fontsize=10)
+
+    # 转换为 PySide6 可用的 Canvas
+
+    return boundary, fig
+
+
+class BackgroundResult:
+    def __init__(self, ecdf_fig=None, kmeans_boundary=None, kmeans_fig=None):
+        self.ecdf_fig = ecdf_fig
+        self.kmeans_boundary = kmeans_boundary
+        self.kmeans_fig = kmeans_fig
+
+
+def process_background_value_method(gdf, columns):
+    results = {}
+    units = {
+        "Radon": "Bq/m³",
+        "VOCs": "mg/m³",
+        "CO2": "%",
+        "O2": "%",
+        "CH4": "%",
+        "H2": "%",
+        "H2S": "mg/m³",
+        "Functional_genes": "copies/g",
+    }
+
+    for col in columns:
+        # 获取单位（默认使用空字符串）
+        unit = units.get(col, "")
+
+        # 处理数据
+        data = gdf[col].dropna().values.reshape(-1, 1)
+        if data.size == 0:
+            results[col] = BackgroundResult()
+            continue
+
+        # 生成图表
+        try:
+            ecdf_fig = draw_ECDF(data, param_name=col, unit=unit)
+        except Exception as e:
+            ecdf_fig = None
+            print(f"ECDF生成失败({col}): {str(e)}")
+
+        try:
+            kmeans_boundary, kmeans_fig = draw_KMeans_cluster(
+                data, param_name=col, unit=unit
+            )
+        except Exception as e:
+            kmeans_boundary = None
+            kmeans_fig = None
+            print(f"KMeans分析失败({col}): {str(e)}")
+
+        # 保存结果
+        results[col] = BackgroundResult(
+            ecdf_fig=ecdf_fig,
+            kmeans_boundary=kmeans_boundary,
+            kmeans_fig=kmeans_fig,
+        )
+
+    return results
+
+
+# def process_background_value_method(gdf, columns):
+#     results = {}
+#     units = {
+#         "Radon": "Bq/m³",
+#         "VOCs": "mg/m³",
+#         "CO2": "%",
+#         "O2": "%",
+#         "CH4": "%",
+#         "H2": "%",
+#         "H2S": "mg/m³",
+#         "Functional_genes": "copies/g",
+#     }
+#     for col in columns:
+#         data = gdf[col].values.reshape(-1, 1)
+#         if data.size == 0:
+#             continue
+#         ecdf_canvas = draw_ECDF(data, param_name=col, unit=units[col])
+#         kmeans_boundary, kmeans_canvas = draw_KMeans_cluster(
+#             data, param_name=col, unit=units[col]
+#         )
+#         results[col] = (ecdf_canvas, kmeans_boundary, kmeans_canvas)
+#     return results
+
+
+# def get_kemans_boundary(gdf, column):
+#     import numpy as np
+#     from sklearn.cluster import KMeans
+#     import geopandas as gpd
+
+#     data = gdf[column].dropna().tolist()
+#     # 将数据转换为二维数组
+#     data = np.array(data).reshape(-1, 1)
+#     if data.size == 0:
+#         return 0.00
+#     # KMeans 聚类，设定为 2 类
+#     kmeans = KMeans(n_clusters=2, random_state=0).fit(data)
+
+#     # 获取聚类中心
+#     centers = kmeans.cluster_centers_.flatten()
+#     # 找到第一类（较小的类）的标签
+#     first_class_label = np.argmin(centers)
+#     # 选择第一类的数据，并取其最大值作为分界点
+#     labels = kmeans.labels_
+#     boundary = data[labels == first_class_label].max()
+#     boundary = np.mean(centers)  # 用聚类中心的中值作为分界点
+#     return boundary
+
+
+# def plot_kemans_boundary(data, value, gdf, columns, unit, save=False):
+#     import numpy as np
+#     from collections import Counter
+#     from sklearn.cluster import KMeans
+#     import matplotlib.pyplot as plt
+
+#     results = {}
+
+#     for col in columns:
+#         # 将数据转换为二维数组
+#         # data = np.array(data).reshape(-1, 1)
+#         data = gdf[col].values.reshape(-1, 1)
+#         if data.size == 0:
+#             continue
+#         # KMeans 聚类，设定为 2 类
+#         kmeans = KMeans(n_clusters=2, random_state=0).fit(data)
+
+#         # 获取聚类中心
+#         centers = kmeans.cluster_centers_.flatten()
+#         boundary = np.mean(centers)  # 用聚类中心的中值作为分界点
+#         # 绘图对象
+#         fig = Figure(figsize=(8, 6), dpi=90)
+#         ax = fig.add_subplot(111)
+#         data_counts = gdf[col].value_counts().to_dict()
+#         for point, count in data_counts.items():
+#             color = "blue" if point < boundary else "orange"
+#             label = (
+#                 "Part Ⅰ"
+#                 if (point == min(data)) and color == "blue"
+#                 else "Part Ⅱ" if (point == max(data)) and color == "orange" else ""
+#             )
+#         ax.scatter(point, 0, color=color, s=50, label=label)
+
+#                     # 显示重复点计数
+#                     if count > 1:
+#                         ax.text(point, 0.005, f"{count}", ha="center", va="bottom", fontsize=10)
+
+#                 # 绘制中心点和分界线
+#                 ax.scatter(
+#                     centers,
+#                     [0] * len(centers),
+#                     color="red",
+#                     s=100,
+#                     marker="x",
+#                     label="Cluster Center",
+#                 )
+#                 ax.axvline(boundary, color="green", linestyle="--", label="Cut-off Value")
+#                 ax.text(
+#                     boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=12
+#                 )
+
+#                 # 设置图表属性
+#                 ax.set_title(f"{value_name} - {col}" if value_name else col)
+#                 ax.set_xlabel(f"{value_name} ({unit})" if unit else col)
+#                 ax.set_yticks([])
+#                 ax.grid(axis="x", linestyle="--")
+#                 ax.legend(ncol=2, fontsize=10)
+
+#                 # 转换为 PySide6 可用的 Canvas
+#                 canvas = FigureCanvas(fig)
+#                 results[col] = (boundary, canvas)
+
+#             return results
+
+
+# def plot_kmeans_boundary(df, columns, value_name="", unit="", random_state=0):
+#     import numpy as np
+#     from collections import Counter
+#     from sklearn.cluster import KMeans
+
+#     """
+#     对 DataFrame 中的指定列进行 KMeans 聚类，返回分界点和绘图对象
+
+#     :param df: 输入的 Pandas DataFrame
+#     :param columns: 需要计算 KMeans 的列名列表
+#     :param value_name: 指标名称（用于显示）
+#     :param unit: 单位（用于坐标轴标签）
+#     :param random_state: KMeans 随机种子
+#     :return: 字典 {列名: (boundary, FigureCanvas)}
+#     """
+#     results = {}
+
+#     for col in columns:
+#         # 提取当前列数据
+#         data = df[col].values.reshape(-1, 1)
+#         if len(data) == 0:
+#             continue
+
+#         # KMeans 聚类
+#         kmeans = KMeans(n_clusters=2, random_state=random_state).fit(data)
+#         centers = kmeans.cluster_centers_.flatten()
+#         boundary = np.mean(centers)
+
+#         # 创建绘图对象
+#         fig = Figure(figsize=(8, 6), dpi=90)
+#         ax = fig.add_subplot(111)
+
+#         # 绘制数据点
+#         data_counts = df[col].value_counts().to_dict()
+#         for point, count in data_counts.items():
+#             # 根据所属聚类分配颜色
+#             color = "blue" if point <= boundary else "orange"
+#             label = (
+#                 "Part Ⅰ"
+#                 if (point == min(data)) and color == "blue"
+#                 else "Part Ⅱ" if (point == max(data)) and color == "orange" else ""
+#             )
+
+#             ax.scatter(point, 0, color=color, s=50, label=label)
+
+#             # 显示重复点计数
+#             if count > 1:
+#                 ax.text(point, 0.005, f"{count}", ha="center", va="bottom", fontsize=10)
+
+#         # 绘制中心点和分界线
+#         ax.scatter(
+#             centers,
+#             [0] * len(centers),
+#             color="red",
+#             s=100,
+#             marker="x",
+#             label="Cluster Center",
+#         )
+#         ax.axvline(boundary, color="green", linestyle="--", label="Cut-off Value")
+#         ax.text(
+#             boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=12
+#         )
+
+#         # 设置图表属性
+#         ax.set_title(f"{value_name} - {col}" if value_name else col)
+#         ax.set_xlabel(f"{value_name} ({unit})" if unit else col)
+#         ax.set_yticks([])
+#         ax.grid(axis="x", linestyle="--")
+#         ax.legend(ncol=2, fontsize=10)
+
+#         # 转换为 PySide6 可用的 Canvas
+#         canvas = FigureCanvas(fig)
+#         results[col] = (boundary, canvas)
+
+#     return results
+
+#! 原始代码
+# 根据标签划分数据
+# labels = kmeans.labels_
+# lower_part = data[labels == np.argmin(centers)].flatten()
+# upper_part = data[labels == np.argmax(centers)].flatten()
+
+# 统计数据点的出现次数
+# data_counts = Counter(data.flatten())
+# 设置全局字体
+# plt.rcParams["font.family"] = "Times New Roman"  # 仿宋
+# plt.rcParams["axes.unicode_minus"] = False  # 正常显示负号
+# # 绘制结果图像
+# plt.figure(figsize=(8, 6), dpi=90)
+
+# for point, count in data_counts.items():
+#     # 分别绘制 lower_part 和 upper_part 的数据点
+#     if point in lower_part:
+#         plt.scatter(
+#             point,
+#             0,
+#             color="blue",
+#             s=50,
+#             label="Part Ⅰ" if point == lower_part[0] else "",
+#         )
+#     if point in upper_part:
+#         plt.scatter(
+#             point,
+#             0,
+#             color="orange",
+#             s=50,
+#             label="Part Ⅱ" if point == upper_part[0] else "",
+#         )
+
+#     # 如果数据点重复，标注数量
+#     if count > 1:
+#         plt.text(
+#             point,
+#             0.005,
+#             f"{count}",
+#             ha="center",
+#             color="black",
+#             fontsize=10,
+#             va="top",
+#         )
+
+# # 标注簇中心
+# plt.scatter(
+#     centers, [0, 0], color="red", s=100, marker="x", label="Cluster center"
+# )
+# # 标注分界线
+# plt.axvline(boundary, color="green", linestyle="--", label="Cut-off value")
+# plt.text(
+#     boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=20
+# )
+# # 添加图例和标签
+# plt.legend(fontsize=10, ncol=2)
+# plt.xticks(fontsize=15)
+# plt.yticks([])
+# plt.xlabel(f"{value}({unit})", fontsize=15)
+# if save:
+#     plt.savefig(f"./ref/KMEANS-{value}.png")
+#     return
+# else:
+#     plt.show()
+
+
+def anomaly_identification(gdf, boundarys):
+    header = [
+        "氡气异常低",
+        "VOCs异常高",
+        "CO2异常高",
+        "O2异常低",
+        "CH4异常高",
+        "功能基因异常高",
+    ]
+    gdf["氡气异常低"] = gdf["Radon"].apply(
+        lambda x: (
+            "×"
+            if x is not None and x > boundarys.get("radon")  # 大于阈值时赋值为 1
+            else (
+                "√"
+                if x is not None and x <= boundarys[0]  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    gdf["VOCs异常高"] = gdf["VOCs"].apply(
+        lambda x: (
+            "√"
+            if x is not None and x > boundarys.get("VOCs")  # 大于阈值时赋值为 1
+            else (
+                "×"
+                if x is not None and x <= boundarys[1]  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    gdf["O2异常低"] = gdf["O2"].apply(
+        lambda x: (
+            "×"
+            if x is not None and x > boundarys.get("O2")  # 大于阈值时赋值为 1
+            else (
+                "√"
+                if x is not None
+                and x <= boundarys.get("O2")  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    gdf["CO2异常高"] = gdf["CO2"].apply(
+        lambda x: (
+            "√"
+            if x is not None and x >= boundarys[2]  # 大于阈值时赋值为 1
+            else (
+                "×"
+                if x is not None and x < boundarys[2]  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    gdf["CH4异常高"] = gdf["CH4"].apply(
+        lambda x: (
+            "√"
+            if x is not None and x >= boundarys[4]  # 大于阈值时赋值为 1
+            else (
+                "×"
+                if x is not None and x < boundarys[4]  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    gdf["功能基因异常高"] = gdf["功能基因"].apply(
+        lambda x: (
+            "√"
+            if x is not None and x >= boundarys[5]  # 大于阈值时赋值为 1
+            else (
+                "×"
+                if x is not None and x < boundarys[5]  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    return gdf
 
 
 def 绘制保存异常点位(
@@ -705,14 +1069,11 @@ def 绘制保存异常点位(
     from pathlib import Path
 
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    if boundary_polygon_file is not None:
-        boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=4547)
-        ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
-    else:
-        fig, ax = plt.subplots()
+    fig = Figure(figsize=(8, 6), dpi=90)
+    ax = fig.add_subplot(111)
 
-        # 将 GeoDataFrame 的绘图环境绑定到 ax，但不绘制内容
-        gdf.plot(ax=ax, visible=False)
+    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=4547)
+    boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     colors = {"√": "red", "×": "green", "⚪": "white"}
     gdf["color"] = gdf[column].map(colors)
     all_null = (gdf["color"] == "white").all()
@@ -759,8 +1120,10 @@ def 绘制保存异常点位(
     ax.legend(
         handles=legend_elements,
     )
-    Path("./pic").mkdir(parents=True, exist_ok=True)
-    plt.savefig(f"./pic/{label}.png")
+    canvas = FigureCanvas(fig)
+    return canvas
+    # Path("./pic").mkdir(parents=True, exist_ok=True)
+    # plt.savefig(f"./pic/{label}.png")
 
 
 def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
@@ -770,15 +1133,11 @@ def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
     from matplotlib import ticker
     from matplotlib.lines import Line2D
 
+    fig = Figure(figsize=(8, 6), dpi=90)
+    ax = fig.add_subplot(111)
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    if boundary_polygon_file is not None:
-        boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=4547)
-        ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
-    else:
-        fig, ax = plt.subplots()
-
-        # 将 GeoDataFrame 的绘图环境绑定到 ax，但不绘制内容
-        gdf.plot(ax=ax, visible=False)
+    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=4547)
+    ax = boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     colors = {"污染源": "red", "污染羽": "orange", "正常": "green"}
     gdf["color"] = gdf["污染类型"].map(colors)
     ax.scatter(gdf.geometry.x, gdf.geometry.y, marker="o", s=30, color=gdf["color"])
@@ -831,11 +1190,13 @@ def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
         # loc="lower right", bbox_to_anchor=(1, 0)
     )
     plt.tight_layout()
+    canvas = FigureCanvas(fig)
+    return canvas
 
-    if save:
-        plt.savefig("./ref/污染点位分布图.png")
-    else:
-        plt.show()
+    # if save:
+    #     plt.savefig("./ref/污染点位分布图.png")
+    # else:
+    #     plt.show()
 
 
 # * 用于报告生成的函数

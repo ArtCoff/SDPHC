@@ -1,4 +1,4 @@
-from draw_EN import 绘制点位分布, 绘制污染点位分布V2, 绘制保存异常点位
+from Method_Functions import 绘制点位分布, 绘制污染点位分布V2, 绘制保存异常点位
 from docx import Document
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING

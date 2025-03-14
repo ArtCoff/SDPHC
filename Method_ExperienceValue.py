@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGridLayout,
 )
-from draw_EN import (
+from Method_Functions import (
     plot_basic_info,
     read_file_columns,
     point_dataset_preprocess,
@@ -73,7 +73,7 @@ class Attribute_Window(QWidget):
 
     def initUI(self, options):
         self.setWindowTitle(software_name)
-        self.setGeometry(100, 100, 400, 200)
+        self.setGeometry(100, 100, 400, 600)
         self.setMinimumSize(400, 300)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.plot_dataset_info_btn = QPushButton(
@@ -156,13 +156,6 @@ class Attribute_Window(QWidget):
         self.worker.result_ready.connect(self.on_worker_result_ready)
         self.worker.finished_signal.connect(self.worker.deleteLater)
         self.worker.start()
-        # self.Contamination_identification_win = Contamination_identification_win(
-        #     options=contents,
-        #     point_dataset=self.point_dataset,
-        #     outline_dataset=self.outline_dataset,
-        # )
-        # self.Contamination_identification_win.show()
-        # self.close()
 
     @Slot(object)
     def on_worker_result_ready(self, result_gdf):
@@ -185,6 +178,9 @@ class Attribute_Window(QWidget):
 
     def get_combos_content(self):
         return [combo.currentText() for combo in self.combos]
+
+    def Validate_input_Data(self):
+        [combo.currentText() for combo in self.combos]
 
     def method_control_combos(self, method):
         if method == Methods.Experience_value_method:

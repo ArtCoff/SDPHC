@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from draw_EN import (
+from Method_Functions import (
     point_dataset_preprocess,
     process_PCA,
     plot_PCA_variance_contribution,
