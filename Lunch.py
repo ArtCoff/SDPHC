@@ -38,7 +38,7 @@ class Start_Window(QWidget):
 
     def initUI(self):
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        self.setWindowTitle(self.tr(Software_info.software_name))
+        self.setWindowTitle(self.tr(Software_info.software_name.value))
 
         self.setMinimumSize(400, 300)
         self.language_switcher = LanguageSwitcher()

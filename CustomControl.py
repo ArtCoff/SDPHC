@@ -117,11 +117,36 @@ class check_btn(QPushButton):
 
 
 class CustomComboBox(QComboBox):
-    def __init__(self, options, index, parent=None):
+    def __init__(self, options, attribute, parent=None):
         super().__init__(parent)
-        self.addItems(options)
+        self.options = options
+        self.attribute = attribute
         self.addItems(["No data available"])
-        self.index = index
+        if self.options:
+            self.addItems(options)
+        self._set_current_index()
+
+    def _set_current_index(self):
+        if self.attribute in self.options:
+            index = self.options.index(self.attribute) + 1
+            self.setCurrentIndex(index)
+        else:
+            self.setCurrentIndex(0)
+        # if self.attribute == "Point_ID":
+        #     self.setCurrentIndex(1)
+        # else:
+        #     if self.attribute.value.name in self.options:
+        #         index = self.options.index(self.attribute.value.name) + 1
+        #         self.setCurrentIndex(index)
+        #     else:
+        #         self.setCurrentIndex(0)
+
+    # @classmethod
+    # def auto_fill(self):
+    #     for index in range(self.count()):
+    #         if self.attribute == "Point_ID":
+    #             self.setItemText(index, self.itemText(index))
+    #         self.setItemText(index, self.itemText(index))
 
 
 class background_value_input_doublespinbox(QDoubleSpinBox):

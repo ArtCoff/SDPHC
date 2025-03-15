@@ -49,23 +49,15 @@ class backgroundValue_worker(QThread):
 
     def run(self):
         gdf = point_dataset_preprocess(self.point_dataset, self.options)
-        columns = [
-            "Radon",
-            "VOCs",
-            "CO2",
-            "CH4",
-            "H2",
-            "H2S",
-            "Functional_genes",
-        ]
+        # columns = [indicator.value.name for indicator in MIM_indicators]
         # process_background_value_method(gdf, columns)
         # results[col] = (ecdf_fig, kmeans_boundary, kmeans_fig)
-        result_class = process_background_value_method(gdf, columns)
+        result_dict = process_background_value_method(gdf)
         # 返回ECDF绘图对象
         # 返回Kmeans绘图对象和边界值
         # 返回预处理的gdf
         # 返回异常点位绘图对象
-        self.result_ready.emit(result_class)
+        self.result_ready.emit(result_dict)
         self.finished_signal.emit()
 
 
@@ -73,10 +65,11 @@ class anomaly_identification_worker(QThread):
     finished_signal = Signal()
     result_ready = Signal(object)
 
-    def __init__(self, point_dataset, options, boundarys):
+    def __init__(self, point_dataset, options, final_boundarys):
         super().__init__()
         self.point_dataset = point_dataset
         self.options = options
+        self.final_boundarys = final_boundarys
 
     def run(self):
         self.result_ready.emit()
@@ -107,7 +100,7 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
         import json
 
         all_indicators = set()
-        with open("./ref/Monitoring_pollution.json", "r", encoding="utf-8") as f:
+        with open("./static/Monitoring_pollution.json", "r", encoding="utf-8") as f:
             data = json.load(f)
 
         for key, value in data.items():
@@ -130,12 +123,12 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
         self.worker.start()
 
     @Slot(object)
-    def on_worker_result_ready(self, result_class):
+    def on_worker_result_ready(self, result_dict):
         if self.loading_window:
             self.loading_window.close()
             self.loading_window = None
         self.background_value_win = background_value_input_manual(
-            result_class=result_class,
+            result_dict=result_dict,
             outline_dataset=self.outline_dataset,
         )
         self.background_value_win.show()
@@ -144,12 +137,12 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
 
 class background_value_input_manual(QWidget):
 
-    def __init__(self, result_class, outline_dataset, other_contaminants=None):
+    def __init__(self, result_dict, outline_dataset, other_contaminants=None):
         super().__init__()
-        self.result_class = result_class
-        self.initUI()
+        self.result_dict = result_dict
         self.outline_dataset = outline_dataset
         self.other_contaminants = other_contaminants
+        self.initUI()
 
     def initUI(self):
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
@@ -181,12 +174,12 @@ class background_value_input_manual(QWidget):
             background_value_input_doublespinbox(range=999999),
         )
         unit_label1, unit_label2, unit_label3, unit_label4, unit_label5, unit_label6 = (
-            QLabel("Bq/m³"),
-            QLabel("ppb"),
-            QLabel("ppm"),
-            QLabel("%"),
-            QLabel("%"),
-            QLabel("copies/g"),
+            QLabel(MIM_indicators.Radon.value.unit),
+            QLabel(MIM_indicators.VOCs.value.unit),
+            QLabel(MIM_indicators.CO2.value.unit),
+            QLabel(MIM_indicators.O2.value.unit),
+            QLabel(MIM_indicators.CH4.value.unit),
+            QLabel(MIM_indicators.FG.value.unit),
         )
         kmeans_btn1, kmeans_btn2, kmeans_btn3, kmeans_btn4, kmeans_btn5, kmeans_btn6 = (
             QPushButton(self.tr("Clustering")),
@@ -196,13 +189,23 @@ class background_value_input_manual(QWidget):
             QPushButton(self.tr("Clustering")),
             QPushButton(self.tr("Clustering")),
         )
-        kmeans_btn1.clicked.connect(lambda: self.plot_kemans_boundary("Radon"))
-        kmeans_btn2.clicked.connect(lambda: self.plot_kemans_boundary("VOCs"))
-        kmeans_btn3.clicked.connect(lambda: self.plot_kemans_boundary("CO2"))
-        kmeans_btn4.clicked.connect(lambda: self.plot_kemans_boundary("O2"))
-        kmeans_btn5.clicked.connect(lambda: self.plot_kemans_boundary("CH4"))
+        kmeans_btn1.clicked.connect(
+            lambda: self.plot_kemans_boundary(MIM_indicators.Radon)
+        )
+        kmeans_btn2.clicked.connect(
+            lambda: self.plot_kemans_boundary(MIM_indicators.VOCs)
+        )
+        kmeans_btn3.clicked.connect(
+            lambda: self.plot_kemans_boundary(MIM_indicators.CO2)
+        )
+        kmeans_btn4.clicked.connect(
+            lambda: self.plot_kemans_boundary(MIM_indicators.O2)
+        )
+        kmeans_btn5.clicked.connect(
+            lambda: self.plot_kemans_boundary(MIM_indicators.CH4)
+        )
         kmeans_btn6.clicked.connect(
-            lambda: self.plot_kemans_boundary("Functional genes")
+            lambda: self.plot_kemans_boundary(MIM_indicators.FG)
         )
         ECDF_btn1, ECDF_btn2, ECDF_btn3, ECDF_btn4, ECDF_btn5, ECDF_btn6 = (
             QPushButton(self.tr("ECDF")),
@@ -212,12 +215,12 @@ class background_value_input_manual(QWidget):
             QPushButton(self.tr("ECDF")),
             QPushButton(self.tr("ECDF")),
         )
-        ECDF_btn1.clicked.connect(lambda: self.plot_ECDF("Radon"))
-        ECDF_btn2.clicked.connect(lambda: self.plot_ECDF("VOCs"))
-        ECDF_btn3.clicked.connect(lambda: self.plot_ECDF("CO2"))
-        ECDF_btn4.clicked.connect(lambda: self.plot_ECDF("O2"))
-        ECDF_btn5.clicked.connect(lambda: self.plot_ECDF("CH4"))
-        ECDF_btn6.clicked.connect(lambda: self.plot_ECDF("Functional genes"))
+        ECDF_btn1.clicked.connect(lambda: self.plot_ECDF(MIM_indicators.Radon))
+        ECDF_btn2.clicked.connect(lambda: self.plot_ECDF(MIM_indicators.VOCs))
+        ECDF_btn3.clicked.connect(lambda: self.plot_ECDF(MIM_indicators.CO2))
+        ECDF_btn4.clicked.connect(lambda: self.plot_ECDF(MIM_indicators.O2))
+        ECDF_btn5.clicked.connect(lambda: self.plot_ECDF(MIM_indicators.CH4))
+        ECDF_btn6.clicked.connect(lambda: self.plot_ECDF(MIM_indicators.FG))
 
         # 统一设置按钮属性
         for btn in [
@@ -313,83 +316,44 @@ class background_value_input_manual(QWidget):
         center_window(self)
 
     def initKmeans(self):
-        self.radon_background_value.setValue(self.result_class["Radon"].kmeans_boundary)
-        # self.VOCs_background_value.setValue(self.result_class["VOCs"].kmeans_boundary)
-        # self.CO2_background_value.setValue(self.result_class["CO2"].kmeans_boundary)
-        # self.O2_background_value.setValue(self.result_class["O2"].kmeans_boundary)
-        # self.CH4_background_value.setValue(self.result_class["CH4"].kmeans_boundary)
-        # self.gene_background_value.setValue(
-        #     self.result_class["Functional_gene"].kmeans_boundary
-        # )
-
-        # def do(self):
-        #     indices = [
-        #         i
-        #         for i, value in enumerate(options)
-        #         # if value == "" or value == "No data available"
-        #         if value == "No data available"
-        #     ]
-        #     print(indices)
-        #     for i in indices:
-        #         if i == 1:
+        # indices = [
+        #     i
+        #     for i, value in enumerate(self.result_dict)
+        #     if value == "No data available"
+        # ]
         #             self.radon_background_value.setEnabled(False),
         #             kmeans_btn1.setEnabled(False)
         #             kmeans_btn1.setText(self.tr("No Data"))
-        #         elif i == 2:
-        #             self.VOCs_background_value.setEnabled(False),
-        #             kmeans_btn2.setEnabled(False)
-        #             kmeans_btn2.setText(self.tr("No Data"))
-        #         elif i == 3:
-        #             self.CO2_background_value.setEnabled(False),
-        #             kmeans_btn3.setText(self.tr("No Data"))
-        #             kmeans_btn3.setEnabled(False)
-        #         elif i == 4:
-        #             self.O2_background_value.setEnabled(False),
-        #             kmeans_btn4.setText(self.tr("No Data"))
-        #             kmeans_btn4.setEnabled(False)
-        #         elif i == 5:
-        #             self.CH4_background_value.setEnabled(False),
-        #             kmeans_btn5.setText(self.tr("No Data"))
-        #             kmeans_btn5.setEnabled(False)
-        #         elif i == 6:
-        #             self.gene_background_value.setEnabled(False),
-        #             kmeans_btn6.setText(self.tr("No Data"))
-        #             kmeans_btn6.setEnabled(False)
-        # 将kmeans_boundarys保存到文件提供给报告
-        # for i, indicator in enumerate(kmeans_indicator):
-        #     plot_kemans_boundary(
-        #         self.gdf[indicator].dropna(), indicator, units[i], save=True
-        #     )
-        # return [
-        #     kmeans_boundary_radon,
-        #     kmeans_boundary_VOCs,
-        #     kmeans_boundary_CO2,
-        #     kmeans_boundary_O2,
-        #     kmeans_boundary_CH4,
-        #     kmeans_boundary_gene,
-        # ]
+        self.radon_background_value.setValue(self.result_dict["Radon"].kmeans_boundary)
+        self.VOCs_background_value.setValue(self.result_dict["VOCs"].kmeans_boundary)
+        self.CO2_background_value.setValue(self.result_dict["CO2"].kmeans_boundary)
+        self.O2_background_value.setValue(self.result_dict["O2"].kmeans_boundary)
+        self.CH4_background_value.setValue(self.result_dict["CH4"].kmeans_boundary)
+        self.gene_background_value.setValue(
+            self.result_dict["Functional_gene"].kmeans_boundary
+        )
 
     def plot_kemans_boundary(self, indicator):
-        print(self.result_class.keys())
-        print(self.result_class.get("O2"))
+        print(self.result_dict.keys())
+        print(self.result_dict.get("O2"))
         # 确保结果存在
-        if indicator not in self.result_class:
+        if indicator not in self.result_dict:
             return QMessageBox.warning(self, "Warning", "未找到该指标的分析结果")
-        fig = self.result_class[indicator].kmeans_fig
+        fig = self.result_dict[indicator].kmeans_fig
         self.plot_window = PlotWindow(fig)
         self.plot_window.show()
 
     def plot_ECDF(self, indicator):
-        if indicator not in self.result_class:
+        if indicator not in self.result_dict:
             return QMessageBox.warning(self, "Warning", "未找到该指标的分析结果")
-        fig = self.result_class[indicator].ecdf_fig
+        fig = self.result_dict[indicator].ecdf_fig
         plot_window = PlotWindow(fig)
         plot_window.show()
         plot_window.exec()
 
     @property
     def get_final_boundarys(self):
-        key = ["Radon", "VOCs", "CO2", "O2", "CH4", "Functional_gene"]
+        key = [indicator for indicator in MIM_indicators]
         value = [
             self.radon_background_value.value(),
             self.VOCs_background_value.value(),
@@ -401,10 +365,10 @@ class background_value_input_manual(QWidget):
         return dict(zip(key, value))
 
     def on_next_clicked(self):
-        contents = self.get_combos_content()
+        final_boundarys = self.get_final_boundarys
         self.loading_window = LoadingWindow()
         self.loading_window.show()
-        self.worker = backgroundValue_worker(self.point_dataset, contents)
+        self.worker = backgroundValue_worker(self.point_dataset, final_boundarys)
         self.worker.result_ready.connect(self.on_worker_result_ready)
         self.worker.finished_signal.connect(self.worker.deleteLater)
         self.worker.start()
@@ -633,7 +597,7 @@ class Contamination_identification_on_background_value(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle(software_name)
+        self.setWindowTitle(Software_info.software_name.value)
         self.exit_btn = QPushButton("退出")
         self.function1_btn = WrapButton("污染点位判定矩阵")
         self.function2_btn = WrapButton("异常点位分布图")

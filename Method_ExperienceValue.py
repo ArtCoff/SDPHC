@@ -25,7 +25,8 @@ from Method_Functions import (
     污染等级识别,
 )
 from PredefinedData import (
-    software_name,
+    Software_info,
+    MIM_indicators,
     Methods,
     Secondary_Functions_of_ExperienceValue,
 )
@@ -65,14 +66,13 @@ class Attribute_Window(QWidget):
     def __init__(self, point_dataset, outline_dataset, method: Enum):
         super().__init__()
         self.method = method
-        self.thread_pool = QThreadPool.globalInstance()
         self.point_dataset = point_dataset
         self.outline_dataset = outline_dataset
-        self.combos = []
-        self.initUI(options=read_file_columns(point_dataset))
+
+        self.initUI(options=read_file_columns(self.point_dataset))
 
     def initUI(self, options):
-        self.setWindowTitle(software_name)
+        self.setWindowTitle(Software_info.software_name.value)
         self.setGeometry(100, 100, 400, 600)
         self.setMinimumSize(400, 300)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
@@ -91,48 +91,34 @@ class Attribute_Window(QWidget):
         total_layout.addWidget(self.plot_dataset_info_btn)
         total_layout.addLayout(self.form_layout)
         total_layout.addWidget(self.bottom_buttons)
-
-        indicator_labels = [
-            self.tr("Point number"),
-            self.tr("Radon"),
-            "VOCs",
-            "CO<sub>2</sub>",
-            "O<sub>2</sub>",
-            "CH<sub>4</sub>",
-            "H<sub>2</sub>",
-            "H<sub>2</sub>S",
-            self.tr("Functional genes"),
-        ]
-        for i in range(9):
-            combo = CustomComboBox(options, i)
-            self.form_layout.addRow(f"{indicator_labels[i]}:", combo)
+        # * 添加combox
+        self.combos = []
+        self.combos.append(CustomComboBox(options, attribute="Point_ID"))
+        self.form_layout.addRow("Point ID:", self.combos[0])
+        for indicator in MIM_indicators:
+            combo = CustomComboBox(options, attribute=indicator.value.name)
+            self.form_layout.addRow(f"{indicator.value.label}:", combo)
             self.combos.append(combo)
-        self.set_initial_selections(options)
         self.method_control_combos(self.method)
         self.setLayout(total_layout)
         center_window(self)
 
-    def set_initial_selections(self, options):
-        Monitoring_indicators = [
-            "Point_code",
-            "Radon",
-            "VOCs",
-            "CO2",
-            "O2",
-            "CH4",
-            "H2",
-            "H2S",
-            "Functional genes",
-        ]
-        for i, data in enumerate(Monitoring_indicators):
-            if data in options:
-                index = options.index(data)
-                self.combos[i].setCurrentIndex(index)
-            else:
-                self.combos[i].setCurrentIndex(-1)
-                last_index = self.combos[i].count() - 1
-                if last_index >= 0:  # 确保至少有一个选项
-                    self.combos[i].setCurrentIndex(last_index)
+    # def set_initial_selections(self, options):
+    #     for i, combo in enumerate(self.combos):
+    #         print(i, combo.attribute)
+    # for i, combo in enumerate(self.combos):
+    #     if combo.attribute == "Point_ID":
+    #         index = combo.findText("Point_ID")
+    #         if index != -1:
+    #             combo.setCurrentIndex(index)
+    #     elif combo.findText(combo.attribute.value.name):
+    #         index = options.index(combo.attribute.value.name)
+    #         if index != -1:
+    #             combo.setCurrentIndex(index)
+    #         else:
+    #             combo.setCurrentIndex(0)
+    #     else:
+    #         combo.setCurrentIndex(0)
 
     def on_help_clicked(self):
         msg_box = QMessageBox(self)
@@ -149,7 +135,7 @@ class Attribute_Window(QWidget):
     def on_next_clicked(self):
 
         contents = self.get_combos_content()
-
+        print(contents)
         self.loading_window = LoadingWindow()
         self.loading_window.show()
         self.worker = worker(self.point_dataset, contents)
@@ -177,10 +163,13 @@ class Attribute_Window(QWidget):
         self.plot_window.show()
 
     def get_combos_content(self):
-        return [combo.currentText() for combo in self.combos]
-
-    def Validate_input_Data(self):
-        [combo.currentText() for combo in self.combos]
+        final_combos = {"Point_ID": self.combos[0].currentText()}
+        for combo in self.combos[1:]:
+            if combo.currentText() == "No data available":
+                final_combos[combo.attribute] = None
+            else:
+                final_combos[combo.attribute] = combo.currentText()
+        return final_combos
 
     def method_control_combos(self, method):
         if method == Methods.Experience_value_method:
@@ -196,7 +185,7 @@ class Contamination_identification_win(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle(self.tr(software_name))
+        self.setWindowTitle(Software_info.software_name.value)
         self.setGeometry(100, 100, 400, 200)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         center_window(self)
@@ -236,7 +225,7 @@ class Contamination_identification_win(QWidget):
         self.result_win1 = function_win(
             display_gdf,
             columns_to_display=[
-                "Point_Code",
+                "Point_ID",
                 "VOCs_Score",
                 "CO2_Score",
                 "H2_Score",
@@ -258,7 +247,7 @@ class Contamination_identification_win(QWidget):
         self.result_win2 = function_win(
             dis_play_gdf,
             columns_to_display=[
-                "Point_Code",
+                "Point_ID",
                 "The_other_soil_gas_scores",
                 "Radon_Score",
                 "All_indicators_Scores",
@@ -271,11 +260,10 @@ class Contamination_identification_win(QWidget):
         self.result_win2.show()
 
     def function_SOC(self):
-        # gdf = 计算污染范围(self.point_dataset, self.options)
         self.result_win4 = function_win(
             display_gdf=self.result_gdf,
             columns_to_display=[
-                "Point_Code",
+                "Point_ID",
                 "The_other_soil_gas_scores",
                 "Scope_of_contamination",
             ],

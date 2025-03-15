@@ -85,15 +85,15 @@ def get_gdf_options(datapoints_shp):
 
 
 # * Experience Value Method
-Monitoring_indicators = [
-    "Radon",
-    "VOCs",
-    "CO2",
-    "O2",
-    "CH4",
-    "H2",
-    "H2S",
-]  # 氡气 VOCs CO2 O2 CH4 H2 H2S
+# Monitoring_indicators = [
+#     "Radon",
+#     "VOCs",
+#     "CO2",
+#     "O2",
+#     "CH4",
+#     "H2",
+#     "H2S",
+# ]  # 氡气 VOCs CO2 O2 CH4 H2 H2S
 # 评分区间严格升序排列；得分数量=区间分界值数量+1；使用bool控制该分界值在左区间的开闭状态
 Radon_score = {
     "breakpoint": [(15, True), (150, True), (1500, True)],
@@ -125,7 +125,7 @@ H2S_score = {
 }
 abnormal_score_config = dict(
     zip(
-        Monitoring_indicators,
+        [indicator.value.name for indicator in MIM_indicators],
         [Radon_score, VOCs_score, CO2_score, O2_score, CH4_score, H2_score, H2S_score],
     )
 )
@@ -145,12 +145,12 @@ def calculate_score(
     """
     result = {}
     other_soil_gas = [
-        "VOCs",
-        "CO2",
-        "O2",
-        "CH4",
-        "H2",
-        "H2S",
+        MIM_indicators.VOCs.value.name,
+        MIM_indicators.CO2.value.name,
+        MIM_indicators.O2.value.name,
+        MIM_indicators.CH4.value.name,
+        MIM_indicators.H2.value.name,
+        MIM_indicators.H2S.value.name,
     ]
     other_soil_gas_scores = 0
 
@@ -193,48 +193,16 @@ def calculate_score(
 
 
 def point_dataset_preprocess(point_dataset, options):
-    # import geopandas as gpd
-
-    # 字段-索引映射配置表（可扩展）
-    FIELD_MAPPING = [
-        ("Point_Code", 0),
-        ("Radon", 1),
-        ("VOCs", 2),
-        ("CO2", 3),
-        ("O2", 4),
-        ("CH4", 5),
-        ("H2", 6),
-        ("H2S", 7),
-        ("Functional_genes", 8),
-    ]
 
     # 读取数据
     gdf = gpd.read_file(point_dataset)
-    # 创建无效索引集合
-    invalid_indices = set()
-    for idx, value in enumerate(options):
-        if value in ("", "No_data"):
-            invalid_indices.add(idx)
-    # 初始化状态报告字典
-    report = {field: False for field in FIELD_MAPPING}
-
-    # 处理每个字段映射
-    for target_field, default_idx in FIELD_MAPPING:
-        # 验证索引有效性
-        if default_idx >= len(options) or default_idx in invalid_indices:
-            gdf[target_field] = None
-            continue
-
-        # 获取源字段名
-        source_col = options[default_idx]
-
-        # 验证字段是否存在
-        if source_col in gdf.columns:
-            gdf[target_field] = gdf[source_col]
-            report[target_field] = True
+    # gdf["Point_ID"] = gdf[options.get("Point_ID")]
+    # Key的类型为枚举类型，无法直接使用
+    for key, value in options.items():
+        if value in gdf.columns:
+            gdf[key] = gdf[value]
         else:
-            gdf[target_field] = None
-
+            gdf[key] = None
     return gdf
 
 
@@ -300,12 +268,15 @@ def read_file_columns(file_path):
     return gdf.columns.tolist()
 
 
-def 绘制污染源区图(gdf, boundary_polygon_file):
+def 绘制污染源区图(
+    gdf, boundary_polygon_file, epsg_code=Drawing_specifications.EPSG_code
+):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
 
-    matplotlib.rcParams["font.family"] = "SimSun"
+    # matplotlib.rcParams["font.family"] = "SimSun"
+    matplotlib.rcParams["font.family"] = "Times New Roman"
     # 设置颜色映射，按 'Category' 分配颜色
     colors = {
         "Source_of_contamination": "red",
@@ -315,7 +286,7 @@ def 绘制污染源区图(gdf, boundary_polygon_file):
     gdf["color"] = gdf["Contamination_type"].map(colors)
     if boundary_polygon_file != "":
         boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(
-            epsg=EPSG_code
+            epsg=epsg_code
         )
         ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
 
@@ -361,7 +332,9 @@ def 绘制污染源区图(gdf, boundary_polygon_file):
     plt.show()
 
 
-def 绘制污染范围(gdf, boundary_polygon_file, epsg_code=EPSG_code):
+def 绘制污染范围(
+    gdf, boundary_polygon_file, epsg_code=Drawing_specifications.EPSG_code
+):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
@@ -369,7 +342,7 @@ def 绘制污染范围(gdf, boundary_polygon_file, epsg_code=EPSG_code):
     from matplotlib.lines import Line2D
 
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=EPSG_code)
+    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
     colors = {1: "orange", 0: "green"}
     gdf["color"] = gdf["Scope_of_contamination"].map(colors)
     ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
@@ -406,14 +379,16 @@ def 绘制污染范围(gdf, boundary_polygon_file, epsg_code=EPSG_code):
     plt.show()
 
 
-def 绘制超标点位(gdf, boundary_polygon_file, epsg_code=EPSG_code):
+def 绘制超标点位(
+    gdf, boundary_polygon_file, epsg_code=Drawing_specifications.EPSG_code
+):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
 
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=EPSG_code)
+    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
     ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
     gdf.plot(
         ax=ax,
@@ -497,7 +472,9 @@ def 污染等级识别(gdf, boundary_polygon_file):
     from rasterio.plot import show
     from rasterio.io import MemoryFile
 
-    boundary_polygon = gpd.read_file(boundary_polygon_file).to_crs(epsg=EPSG_code)
+    boundary_polygon = gpd.read_file(boundary_polygon_file).to_crs(
+        epsg=Drawing_specifications.EPSG_code
+    )
     # 提取坐标
     points = np.array([[p.x, p.y] for p in gdf.geometry])
 
@@ -660,9 +637,6 @@ def draw_KMeans_cluster(data, param_name="", unit="", random_state=0):
     ax.set_yticks([])
     ax.grid(axis="x", linestyle="--")
     ax.legend(ncol=2, fontsize=10)
-
-    # 转换为 PySide6 可用的 Canvas
-
     return boundary, fig
 
 
@@ -673,27 +647,16 @@ class BackgroundResult:
         self.kmeans_fig = kmeans_fig
 
 
-def process_background_value_method(gdf, columns):
+def process_background_value_method(gdf):
     results = {}
-    units = {
-        "Radon": "Bq/m³",
-        "VOCs": "mg/m³",
-        "CO2": "%",
-        "O2": "%",
-        "CH4": "%",
-        "H2": "%",
-        "H2S": "mg/m³",
-        "Functional_genes": "copies/g",
-    }
 
-    for col in columns:
-        # 获取单位（默认使用空字符串）
-        unit = units.get(col, "")
-
+    for col in ["Radon", "VOCs", "CO2", "O2", "CH4", "H2S", "H2"]:
+        print(f"Processing {col}...")
+        unit = MIM_indicators.get_unit_by_name(col)
         # 处理数据
         data = gdf[col].dropna().values.reshape(-1, 1)
         if data.size == 0:
-            results[col] = BackgroundResult()
+            results[MIM_indicators.get_enumName_by_valueName(col)] = BackgroundResult()
             continue
 
         # 生成图表
@@ -713,7 +676,7 @@ def process_background_value_method(gdf, columns):
             print(f"KMeans分析失败({col}): {str(e)}")
 
         # 保存结果
-        results[col] = BackgroundResult(
+        results[MIM_indicators.get_enumName_by_valueName(col)] = BackgroundResult(
             ecdf_fig=ecdf_fig,
             kmeans_boundary=kmeans_boundary,
             kmeans_fig=kmeans_fig,
@@ -721,195 +684,6 @@ def process_background_value_method(gdf, columns):
 
     return results
 
-
-# def process_background_value_method(gdf, columns):
-#     results = {}
-#     units = {
-#         "Radon": "Bq/m³",
-#         "VOCs": "mg/m³",
-#         "CO2": "%",
-#         "O2": "%",
-#         "CH4": "%",
-#         "H2": "%",
-#         "H2S": "mg/m³",
-#         "Functional_genes": "copies/g",
-#     }
-#     for col in columns:
-#         data = gdf[col].values.reshape(-1, 1)
-#         if data.size == 0:
-#             continue
-#         ecdf_canvas = draw_ECDF(data, param_name=col, unit=units[col])
-#         kmeans_boundary, kmeans_canvas = draw_KMeans_cluster(
-#             data, param_name=col, unit=units[col]
-#         )
-#         results[col] = (ecdf_canvas, kmeans_boundary, kmeans_canvas)
-#     return results
-
-
-# def get_kemans_boundary(gdf, column):
-#     import numpy as np
-#     from sklearn.cluster import KMeans
-#     import geopandas as gpd
-
-#     data = gdf[column].dropna().tolist()
-#     # 将数据转换为二维数组
-#     data = np.array(data).reshape(-1, 1)
-#     if data.size == 0:
-#         return 0.00
-#     # KMeans 聚类，设定为 2 类
-#     kmeans = KMeans(n_clusters=2, random_state=0).fit(data)
-
-#     # 获取聚类中心
-#     centers = kmeans.cluster_centers_.flatten()
-#     # 找到第一类（较小的类）的标签
-#     first_class_label = np.argmin(centers)
-#     # 选择第一类的数据，并取其最大值作为分界点
-#     labels = kmeans.labels_
-#     boundary = data[labels == first_class_label].max()
-#     boundary = np.mean(centers)  # 用聚类中心的中值作为分界点
-#     return boundary
-
-
-# def plot_kemans_boundary(data, value, gdf, columns, unit, save=False):
-#     import numpy as np
-#     from collections import Counter
-#     from sklearn.cluster import KMeans
-#     import matplotlib.pyplot as plt
-
-#     results = {}
-
-#     for col in columns:
-#         # 将数据转换为二维数组
-#         # data = np.array(data).reshape(-1, 1)
-#         data = gdf[col].values.reshape(-1, 1)
-#         if data.size == 0:
-#             continue
-#         # KMeans 聚类，设定为 2 类
-#         kmeans = KMeans(n_clusters=2, random_state=0).fit(data)
-
-#         # 获取聚类中心
-#         centers = kmeans.cluster_centers_.flatten()
-#         boundary = np.mean(centers)  # 用聚类中心的中值作为分界点
-#         # 绘图对象
-#         fig = Figure(figsize=(8, 6), dpi=90)
-#         ax = fig.add_subplot(111)
-#         data_counts = gdf[col].value_counts().to_dict()
-#         for point, count in data_counts.items():
-#             color = "blue" if point < boundary else "orange"
-#             label = (
-#                 "Part Ⅰ"
-#                 if (point == min(data)) and color == "blue"
-#                 else "Part Ⅱ" if (point == max(data)) and color == "orange" else ""
-#             )
-#         ax.scatter(point, 0, color=color, s=50, label=label)
-
-#                     # 显示重复点计数
-#                     if count > 1:
-#                         ax.text(point, 0.005, f"{count}", ha="center", va="bottom", fontsize=10)
-
-#                 # 绘制中心点和分界线
-#                 ax.scatter(
-#                     centers,
-#                     [0] * len(centers),
-#                     color="red",
-#                     s=100,
-#                     marker="x",
-#                     label="Cluster Center",
-#                 )
-#                 ax.axvline(boundary, color="green", linestyle="--", label="Cut-off Value")
-#                 ax.text(
-#                     boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=12
-#                 )
-
-#                 # 设置图表属性
-#                 ax.set_title(f"{value_name} - {col}" if value_name else col)
-#                 ax.set_xlabel(f"{value_name} ({unit})" if unit else col)
-#                 ax.set_yticks([])
-#                 ax.grid(axis="x", linestyle="--")
-#                 ax.legend(ncol=2, fontsize=10)
-
-#                 # 转换为 PySide6 可用的 Canvas
-#                 canvas = FigureCanvas(fig)
-#                 results[col] = (boundary, canvas)
-
-#             return results
-
-
-# def plot_kmeans_boundary(df, columns, value_name="", unit="", random_state=0):
-#     import numpy as np
-#     from collections import Counter
-#     from sklearn.cluster import KMeans
-
-#     """
-#     对 DataFrame 中的指定列进行 KMeans 聚类，返回分界点和绘图对象
-
-#     :param df: 输入的 Pandas DataFrame
-#     :param columns: 需要计算 KMeans 的列名列表
-#     :param value_name: 指标名称（用于显示）
-#     :param unit: 单位（用于坐标轴标签）
-#     :param random_state: KMeans 随机种子
-#     :return: 字典 {列名: (boundary, FigureCanvas)}
-#     """
-#     results = {}
-
-#     for col in columns:
-#         # 提取当前列数据
-#         data = df[col].values.reshape(-1, 1)
-#         if len(data) == 0:
-#             continue
-
-#         # KMeans 聚类
-#         kmeans = KMeans(n_clusters=2, random_state=random_state).fit(data)
-#         centers = kmeans.cluster_centers_.flatten()
-#         boundary = np.mean(centers)
-
-#         # 创建绘图对象
-#         fig = Figure(figsize=(8, 6), dpi=90)
-#         ax = fig.add_subplot(111)
-
-#         # 绘制数据点
-#         data_counts = df[col].value_counts().to_dict()
-#         for point, count in data_counts.items():
-#             # 根据所属聚类分配颜色
-#             color = "blue" if point <= boundary else "orange"
-#             label = (
-#                 "Part Ⅰ"
-#                 if (point == min(data)) and color == "blue"
-#                 else "Part Ⅱ" if (point == max(data)) and color == "orange" else ""
-#             )
-
-#             ax.scatter(point, 0, color=color, s=50, label=label)
-
-#             # 显示重复点计数
-#             if count > 1:
-#                 ax.text(point, 0.005, f"{count}", ha="center", va="bottom", fontsize=10)
-
-#         # 绘制中心点和分界线
-#         ax.scatter(
-#             centers,
-#             [0] * len(centers),
-#             color="red",
-#             s=100,
-#             marker="x",
-#             label="Cluster Center",
-#         )
-#         ax.axvline(boundary, color="green", linestyle="--", label="Cut-off Value")
-#         ax.text(
-#             boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=12
-#         )
-
-#         # 设置图表属性
-#         ax.set_title(f"{value_name} - {col}" if value_name else col)
-#         ax.set_xlabel(f"{value_name} ({unit})" if unit else col)
-#         ax.set_yticks([])
-#         ax.grid(axis="x", linestyle="--")
-#         ax.legend(ncol=2, fontsize=10)
-
-#         # 转换为 PySide6 可用的 Canvas
-#         canvas = FigureCanvas(fig)
-#         results[col] = (boundary, canvas)
-
-#     return results
 
 #! 原始代码
 # 根据标签划分数据

@@ -20,7 +20,7 @@ from Method_Functions import (
     plot_PCA_Biplot,
     plot_PC1_interpolation,
 )
-from PredefinedData import software_name
+from PredefinedData import Software_info
 from CustomControl import next_btn, help_btn, check_btn, Interpolation_method_selection
 from Pyside6Functions import center_window
 from Method_ExperienceValue import Attribute_Window
@@ -94,7 +94,7 @@ class PCAplot(QWidget):
         )
 
         # 创建主布局
-        self.setWindowTitle(self.tr(software_name))
+        self.setWindowTitle(self.tr(Software_info.software_name.value))
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.layout = QHBoxLayout()
         self.total_layout = QVBoxLayout()

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Software_info:
+class Software_info(Enum):
     software_name = "MIM LNAP Pollution Aid Identification Software"
     software_version = "1.0.0"
     software_author = "Hefei University of Technology"
@@ -11,17 +11,6 @@ class Software_info:
 
 class Drawing_specifications:
     EPSG_code = 4547
-
-
-class MIM_indicators(Enum):
-    Radon = "Radon"
-    VOCs = "VOCs"
-    CO2 = "CO2"
-    O2 = "O2"
-    CH4 = "CH4"
-    H2S = "H2S"
-    H2 = "H2"
-    FG = "Functional genes"
 
 
 class Methods(Enum):
@@ -35,3 +24,47 @@ class Secondary_Functions_of_ExperienceValue(Enum):
     function_PSA = "Pollution source area"  # "污染源区与疑似污染源区"
     function_SOC = "Scope of contamination"  # "污染范围"
     function_PLI = "Pollution level identification"  # "污染程度识别"
+
+
+# 单个指标的类
+class indicator:
+    def __init__(self, name, chinese_name, unit, label: str = None):
+        self.name = name
+        self.chinese_name = chinese_name
+        self.unit = unit
+        if label is None:
+            self.label = str(name)
+        else:
+            self.label = label
+
+    def __repr__(self):
+        return f"indicator(name={self.name}, chinese_name={self.chinese_name}, unit={self.unit},label={self.label})"
+
+
+class MIM_indicators(Enum):
+    Radon = indicator(name="Radon", chinese_name="氡气", unit="Bq/m³")
+    VOCs = indicator(name="VOCs", chinese_name="挥发性有机物", unit="ppb")
+    CO2 = indicator(
+        name="CO2", chinese_name="二氧化碳", unit="ppm", label="CO<sub>2</sub>"
+    )
+    O2 = indicator(name="O2", chinese_name="氧气", unit="%", label="O<sub>2</sub>")
+    CH4 = indicator(name="CH4", chinese_name="甲烷", unit="%", label="CH<sub>4</sub>")
+    H2S = indicator(
+        name="H2S", chinese_name="硫化氢", unit="mg/m3", label="H<sub>2</sub>S"
+    )
+    H2 = indicator(name="H2", chinese_name="氢气", unit="mg/m3", label="H<sub>2</sub>")
+    FG = indicator(name="Functional genes", chinese_name="功能基因", unit="copies/g")
+
+    @classmethod
+    def get_unit_by_name(cls, name):
+        for member in cls:
+            if member.value.name == name:
+                return member.value.unit
+        return ""  # 如果未找到匹配项，返回空字符串
+
+    @classmethod
+    def get_enumName_by_valueName(cls, value_name):
+        for member in cls:
+            if member.value.name == value_name:
+                return member.name
+        return None
