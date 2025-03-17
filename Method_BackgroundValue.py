@@ -143,7 +143,7 @@ class indicator_background_value_input(QWidget):
         self.status = True
         if self.result.kmeans_boundary is None:
             self.status = False
-        self.label = QLabel(indicator.value.label)
+        self.label = QLabel(f"{indicator.value.label}:")
         self.unit_label = QLabel(indicator.value.unit)
         self.background_value_input = background_value_input_doublespinbox(
             range=value_range
@@ -155,14 +155,19 @@ class indicator_background_value_input(QWidget):
         self.set_status()
         self.set_value()
         self.set_UI()
-        layout = QHBoxLayout()
-        layout.addWidget(self.label)
-        layout.addWidget(self.background_value_input)
-        layout.addWidget(self.ecdf_btn)
-        layout.addWidget(self.kmeans_btn)
-        self.setLayout(layout)
 
     def set_UI(self):
+        layout = QHBoxLayout()
+        layout.addWidget(self.label, stretch=1)
+        self.label.setMinimumSize(80, 30)
+        layout.addWidget(self.background_value_input, stretch=2)
+        self.background_value_input.setMinimumSize(100, 30)
+        layout.addWidget(self.unit_label, stretch=1)
+        self.unit_label.setMinimumSize(50, 30)
+        layout.addWidget(self.ecdf_btn, stretch=1)
+        layout.addWidget(self.kmeans_btn, stretch=1)
+        layout.setContentsMargins(10, 0, 10, 0)
+        self.setLayout(layout)
         for btn in [self.ecdf_btn, self.kmeans_btn]:
             btn.setFixedWidth(100)
             btn.setStyleSheet(
@@ -221,7 +226,7 @@ class background_value_input_manual(QWidget):
     def initUI(self):
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setWindowTitle(self.tr("Background value manual input"))
-        self.setGeometry(100, 100, 500, 300)
+        self.setGeometry(100, 100, 600, 300)
         self.setMinimumSize(500, 300)
         # for row_idx, (label, spinbox, unit, kmeans_btn, ecdf_btn) in enumerate(rows):
         #     # 设置标签右对齐
@@ -253,6 +258,7 @@ class background_value_input_manual(QWidget):
             MIM_indicators.FG, self.result_dict, value_range=999999
         )
         self.value_layout = QVBoxLayout()
+        self.value_layout.setContentsMargins(5, 5, 5, 5)
         self.value_layout.addWidget(self.radon_background_value)
         self.value_layout.addWidget(self.VOCs_background_value)
         self.value_layout.addWidget(self.CO2_background_value)
@@ -265,8 +271,8 @@ class background_value_input_manual(QWidget):
         self.bottom_buttons.next_btn_clicked.connect(self.on_next_clicked)
         self.bottom_buttons.help_btn_clicked.connect(self.on_help_clicked)
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(0, 0, 10, 5)
+        main_layout.setSpacing(0)
         main_layout.addLayout(self.value_layout)
         main_layout.addWidget(self.bottom_buttons)
         self.setLayout(main_layout)
@@ -428,12 +434,13 @@ class function_win(QWidget):
                 )
 
     def plot_data(self):
-        # self.plot_window = PlotWindow(self.result_dict.get("anomaly_figs"))
+        from Pyside6Functions import show_multiple_plots
+
+        figs = []
         for indicator, fig in self.result_dict.get("anomaly_figs"):
-            plot_window = PlotWindow(fig)
-            plot_window.show()
-        # self.plot_window.show()
-        # self.plot_window.exec()
+            if fig is not None:
+                figs.append(fig)
+        show_multiple_plots(figs)
 
     def auto_report(self):
         import docx

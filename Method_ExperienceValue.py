@@ -146,7 +146,14 @@ class Attribute_Window(QWidget):
         self.plot_window.show()
 
     def get_combos_content(self):
-        final_combos = {"Point_ID": self.combos[0].currentText()}
+        final_combos = {
+            "Point_ID": lambda: (
+                None
+                if self.combos[0].currentText() == "No data available"
+                else self.combos[0].currentText()
+            )
+        }
+
         for combo in self.combos[1:]:
             if combo.currentText() == "No data available":
                 final_combos[combo.attribute] = None

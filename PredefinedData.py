@@ -57,7 +57,7 @@ class MIM_indicators(Enum):
         name="FG",
         chinese_name="功能基因",
         unit="copies/g",
-        label="Functional genes",
+        label="Functional<br>genes",
     )
 
     @classmethod

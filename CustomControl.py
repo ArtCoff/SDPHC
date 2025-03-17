@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (
 )
 from PredefinedData import Methods
 from PySide6.QtWidgets import (
-    QMainWindow,
     QVBoxLayout,
     QWidget,
     QFileDialog,
@@ -346,6 +345,7 @@ class bottom_buttons(QWidget):
         self.btn_layout.addWidget(self.next_btn, alignment=Qt.AlignRight)
         self.next_btn.clicked.connect(self.next_btn_clicked.emit)
         self.help_btn.clicked.connect(self.help_btn_clicked.emit)
+        self.btn_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.btn_layout)
 
 
@@ -408,7 +408,6 @@ class PlotWindow(QWidget):
         self.setGeometry(100, 100, 400, 300)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setMinimumSize(400, 300)
-        # self.setAttribute(Qt.WA_DeleteOnClose)  # 关闭时自动释放资源
 
         # 创建绘图区域
         self.canvas = None
@@ -433,16 +432,16 @@ class PlotWindow(QWidget):
         layout.addWidget(self.canvas)
         self.setLayout(layout)
 
-    def closeEvent(self, event):
-        """重写关闭事件，确保资源释放"""
-        if self.canvas:
-            self.canvas.close()  # 关闭画布
-            self.canvas = None
-        if self.fig:
-            self.fig.clf()  # 清除图形
-            self.fig = None
-        self.deleteLater()  # 强制释放资源
-        super().closeEvent(event)
+    # def closeEvent(self, event):
+    #     """重写关闭事件，确保资源释放"""
+    #     if self.canvas:
+    #         self.canvas.close()  # 关闭画布
+    #         self.canvas = None
+    #     if self.fig:
+    #         self.fig.clf()  # 清除图形
+    #         self.fig = None
+    #     self.deleteLater()  # 强制释放资源
+    #     super().closeEvent(event)
 
 
 if __name__ == "__main__":

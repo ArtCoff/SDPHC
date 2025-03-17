@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QLayoutItem,
     QWidget,
 )
+from CustomControl import PlotWindow
 
 title_font = QFont("Arial", 12)
 
@@ -100,3 +101,25 @@ def traverse_layout(layout: QLayout, callback):
 
 #     # 移动窗口到目标位置
 #     window.move(x, y)
+
+
+def show_multiple_plots(figs):
+    """
+    显示多个 Figure 对象，每个图表在独立窗口
+    :param figs: list[Figure]
+    """
+    app = QApplication.instance() or QApplication([])
+    app.windows = []
+
+    for i, fig in enumerate(figs):
+        window = PlotWindow(fig)
+        window.setWindowTitle(f"Plot {i+1} - {window.windowTitle()}")
+
+        # 偏移窗口位置避免完全重叠
+        if i > 0:
+            window.move(window.x() + 30 * i, window.y() + 30 * i)
+
+        window.show()
+        app.windows.append(window)
+
+    app.exec()

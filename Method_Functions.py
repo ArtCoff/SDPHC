@@ -1050,9 +1050,40 @@ import numpy as np
 import seaborn as sns
 
 
-def process_PCA(dataset, pca_columns):
-    dataset = gpd.read_file(dataset)
-    dataset = dataset[pca_columns].dropna()
+def return_PCA_results(point_dataset, options, outline_dataset):
+    gdf = point_dataset_preprocess(point_dataset=point_dataset, options=options)
+    pca_columns = []
+    for key, value in options.items():
+        if value != None and type(value) == str:
+            pca_columns.append(value)
+    print(pca_columns)
+    pca_results, pca_loadings, pca_var_ratio, pca_scores = process_PCA(
+        gdf=gdf, pca_columns=pca_columns
+    )
+    PCA_variance_contribution_fig = plot_PCA_variance_contribution(pca_var_ratio)
+    PCA_loading_plot_fig = plot_PCA_loading_plot(pca_loadings, pca_var_ratio)
+    PCA_Biplot_fig = plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio)
+    PC1_interpolation_figs = {}
+    interpolation_methods = ["Nearest", "Cubic", "IDW", "Kriging"]
+    for interpolation_method in interpolation_methods:
+        fig = plot_PC1_interpolation(
+            boundary_file=outline_dataset,
+            points_gdf=gdf,
+            pca_scores=pca_scores,
+            interpolation_method=interpolation_method,
+        )
+        PC1_interpolation_figs[interpolation_method] = fig
+    return {
+        "PCA_variance_contribution_fig": PCA_variance_contribution_fig,
+        "PCA_loading_plot_fig": PCA_loading_plot_fig,
+        "PCA_Biplot_fig": PCA_Biplot_fig,
+        "PC1_interpolation_figs": PC1_interpolation_figs,
+    }
+
+
+def process_PCA(gdf, pca_columns):
+    # dataset = gdf[pca_columns].dropna()
+    dataset = gdf[gdf[pca_columns].notna().all(axis=1)][pca_columns]
     scaler_pca = StandardScaler()
     data_pca_scaled = scaler_pca.fit_transform(dataset)
     pca_analysis = PCA(n_components=3)
