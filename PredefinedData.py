@@ -53,7 +53,12 @@ class MIM_indicators(Enum):
         name="H2S", chinese_name="硫化氢", unit="mg/m3", label="H<sub>2</sub>S"
     )
     H2 = indicator(name="H2", chinese_name="氢气", unit="mg/m3", label="H<sub>2</sub>")
-    FG = indicator(name="Functional genes", chinese_name="功能基因", unit="copies/g")
+    FG = indicator(
+        name="FG",
+        chinese_name="功能基因",
+        unit="copies/g",
+        label="Functional genes",
+    )
 
     @classmethod
     def get_unit_by_name(cls, name):

@@ -3,6 +3,9 @@ from PySide6.QtCore import Qt, QAbstractTableModel, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QApplication,
+    QLayout,
+    QLayoutItem,
+    QWidget,
 )
 
 title_font = QFont("Arial", 12)
@@ -26,8 +29,24 @@ def center_window(window):
     window.move(window_geometry.topLeft())
 
 
-from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QRect
+def traverse_layout(layout: QLayout, callback):
+    """
+    递归遍历布局中的所有部件和子布局
+    :param layout: 要遍历的布局（QLayout）
+    :param callback: 对每个部件执行的回调函数（接收 QWidget 参数）
+    """
+    collected = []
+    for i in range(layout.count()):
+        item: QLayoutItem = layout.itemAt(i)
+        widget: QWidget = item.widget()
+        child_layout: QLayout = item.layout()
+
+        if widget:  # 如果是部件
+            result = callback(widget)
+            collected.append(result)
+        elif child_layout:  # 如果是子布局
+            collected.extend(traverse_layout_collect(child_layout, callback))
+    return collected
 
 
 # def center_window(window, width=None, height=None, position="center"):

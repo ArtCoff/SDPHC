@@ -103,23 +103,6 @@ class Attribute_Window(QWidget):
         self.setLayout(total_layout)
         center_window(self)
 
-    # def set_initial_selections(self, options):
-    #     for i, combo in enumerate(self.combos):
-    #         print(i, combo.attribute)
-    # for i, combo in enumerate(self.combos):
-    #     if combo.attribute == "Point_ID":
-    #         index = combo.findText("Point_ID")
-    #         if index != -1:
-    #             combo.setCurrentIndex(index)
-    #     elif combo.findText(combo.attribute.value.name):
-    #         index = options.index(combo.attribute.value.name)
-    #         if index != -1:
-    #             combo.setCurrentIndex(index)
-    #         else:
-    #             combo.setCurrentIndex(0)
-    #     else:
-    #         combo.setCurrentIndex(0)
-
     def on_help_clicked(self):
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Information)
@@ -169,6 +152,7 @@ class Attribute_Window(QWidget):
                 final_combos[combo.attribute] = None
             else:
                 final_combos[combo.attribute] = combo.currentText()
+        print(final_combos)
         return final_combos
 
     def method_control_combos(self, method):

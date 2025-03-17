@@ -141,27 +141,12 @@ class CustomComboBox(QComboBox):
         #     else:
         #         self.setCurrentIndex(0)
 
-    # @classmethod
-    # def auto_fill(self):
-    #     for index in range(self.count()):
-    #         if self.attribute == "Point_ID":
-    #             self.setItemText(index, self.itemText(index))
-    #         self.setItemText(index, self.itemText(index))
-
 
 class background_value_input_doublespinbox(QDoubleSpinBox):
     def __init__(self, range):
         super().__init__()
         self.setRange(0.0, range)
         self.setDecimals(4)
-
-
-# class CustomComboBox_v2(QComboBox):
-#     def __init__(self, options, index, parent=None):
-#         super().__init__(parent)
-#         self.addItems(options)
-#         self.addItems(["No data available"])
-#         self.index = index
 
 
 class CustomRadioButtons(QWidget):

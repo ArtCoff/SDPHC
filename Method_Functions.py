@@ -650,13 +650,13 @@ class BackgroundResult:
 def process_background_value_method(gdf):
     results = {}
 
-    for col in ["Radon", "VOCs", "CO2", "O2", "CH4", "H2S", "H2"]:
-        print(f"Processing {col}...")
-        unit = MIM_indicators.get_unit_by_name(col)
+    for col in [indicator for indicator in MIM_indicators]:
+        print(f"Processing {col.value.name}...")
+        unit = col.value.unit
         # 处理数据
-        data = gdf[col].dropna().values.reshape(-1, 1)
+        data = gdf[col.value.name].dropna().values.reshape(-1, 1)
         if data.size == 0:
-            results[MIM_indicators.get_enumName_by_valueName(col)] = BackgroundResult()
+            results[col] = BackgroundResult()
             continue
 
         # 生成图表
@@ -676,7 +676,7 @@ def process_background_value_method(gdf):
             print(f"KMeans分析失败({col}): {str(e)}")
 
         # 保存结果
-        results[MIM_indicators.get_enumName_by_valueName(col)] = BackgroundResult(
+        results[col] = BackgroundResult(
             ecdf_fig=ecdf_fig,
             kmeans_boundary=kmeans_boundary,
             kmeans_fig=kmeans_fig,
@@ -730,6 +730,7 @@ def process_background_value_method(gdf):
 #             va="top",
 #         )
 
+
 # # 标注簇中心
 # plt.scatter(
 #     centers, [0, 0], color="red", s=100, marker="x", label="Cluster center"
@@ -749,80 +750,114 @@ def process_background_value_method(gdf):
 #     return
 # else:
 #     plt.show()
+def calculate_backgroundValue(data, boundarys):
+    new_data = data.copy()
+    gdf = new_data.get("gdf")
+    result_gdf = anomaly_identification(gdf, boundarys)
+    anomaly_figs = []
+    headers = [
+        ("氡气异常低", MIM_indicators.Radon),
+        ("VOCs异常高", MIM_indicators.VOCs),
+        ("CO2异常高", MIM_indicators.CO2),
+        ("O2异常低", MIM_indicators.O2),
+        ("CH4异常高", MIM_indicators.CH4),
+        ("功能基因异常高", MIM_indicators.FG),
+    ]
+    for column, indicator in headers:
+        anomaly_figs.append(
+            (
+                indicator,
+                backgroundValue_anomaly_fig(
+                    gdf=gdf,
+                    column=column,
+                    label=indicator.value.label,
+                    boundary_polygon_file=new_data.get("outline_dataset"),
+                ),
+            ),
+        )
+    result_gdf["点位"] = result_gdf["Point_ID"]
+    new_data["gdf"] = result_gdf
+    new_data["anomaly_figs"] = anomaly_figs
+    return new_data
+    # pass
 
 
 def anomaly_identification(gdf, boundarys):
-    header = [
-        "氡气异常低",
-        "VOCs异常高",
-        "CO2异常高",
-        "O2异常低",
-        "CH4异常高",
-        "功能基因异常高",
-    ]
-    gdf["氡气异常低"] = gdf["Radon"].apply(
+
+    gdf["氡气异常低"] = gdf[MIM_indicators.Radon.value.name].apply(
         lambda x: (
             "×"
-            if x is not None and x > boundarys.get("radon")  # 大于阈值时赋值为 1
-            else (
-                "√"
-                if x is not None and x <= boundarys[0]  # 小于或等于阈值时赋值为 0
-                else "⚪"
-            )
-        )
-    )
-    gdf["VOCs异常高"] = gdf["VOCs"].apply(
-        lambda x: (
-            "√"
-            if x is not None and x > boundarys.get("VOCs")  # 大于阈值时赋值为 1
-            else (
-                "×"
-                if x is not None and x <= boundarys[1]  # 小于或等于阈值时赋值为 0
-                else "⚪"
-            )
-        )
-    )
-    gdf["O2异常低"] = gdf["O2"].apply(
-        lambda x: (
-            "×"
-            if x is not None and x > boundarys.get("O2")  # 大于阈值时赋值为 1
+            if x is not None
+            and x > boundarys.get(MIM_indicators.Radon)  # 大于阈值时赋值为 1
             else (
                 "√"
                 if x is not None
-                and x <= boundarys.get("O2")  # 小于或等于阈值时赋值为 0
+                and x <= boundarys.get(MIM_indicators.Radon)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    gdf["CO2异常高"] = gdf["CO2"].apply(
+    gdf["VOCs异常高"] = gdf[MIM_indicators.VOCs.value.name].apply(
         lambda x: (
             "√"
-            if x is not None and x >= boundarys[2]  # 大于阈值时赋值为 1
+            if x is not None
+            and x > boundarys.get(MIM_indicators.VOCs)  # 大于阈值时赋值为 1
             else (
                 "×"
-                if x is not None and x < boundarys[2]  # 小于或等于阈值时赋值为 0
+                if x is not None
+                and x <= boundarys.get(MIM_indicators.VOCs)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    gdf["CH4异常高"] = gdf["CH4"].apply(
+    gdf["O2异常低"] = gdf[MIM_indicators.O2.value.name].apply(
         lambda x: (
-            "√"
-            if x is not None and x >= boundarys[4]  # 大于阈值时赋值为 1
+            "×"
+            if x is not None
+            and x > boundarys.get(MIM_indicators.O2)  # 大于阈值时赋值为 1
             else (
-                "×"
-                if x is not None and x < boundarys[4]  # 小于或等于阈值时赋值为 0
+                "√"
+                if x is not None
+                and x <= boundarys.get(MIM_indicators.O2)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    gdf["功能基因异常高"] = gdf["功能基因"].apply(
+    gdf["CO2异常高"] = gdf[MIM_indicators.CO2.value.name].apply(
         lambda x: (
             "√"
-            if x is not None and x >= boundarys[5]  # 大于阈值时赋值为 1
+            if x is not None
+            and x >= boundarys.get(MIM_indicators.CO2)  # 大于阈值时赋值为 1
             else (
                 "×"
-                if x is not None and x < boundarys[5]  # 小于或等于阈值时赋值为 0
+                if x is not None
+                and x < boundarys.get(MIM_indicators.CO2)  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    gdf["CH4异常高"] = gdf[MIM_indicators.CH4.value.name].apply(
+        lambda x: (
+            "√"
+            if x is not None
+            and x >= boundarys.get(MIM_indicators.CH4)  # 大于阈值时赋值为 1
+            else (
+                "×"
+                if x is not None
+                and x < boundarys.get(MIM_indicators.CH4)  # 小于或等于阈值时赋值为 0
+                else "⚪"
+            )
+        )
+    )
+    gdf["功能基因异常高"] = gdf[MIM_indicators.FG.value.name].apply(
+        lambda x: (
+            "√"
+            if x is not None
+            and x >= boundarys.get(MIM_indicators.FG)  # 大于阈值时赋值为 1
+            else (
+                "×"
+                if x is not None
+                and x < boundarys.get(MIM_indicators.FG)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
@@ -830,7 +865,7 @@ def anomaly_identification(gdf, boundarys):
     return gdf
 
 
-def 绘制保存异常点位(
+def backgroundValue_anomaly_fig(
     gdf,
     column,
     label,
@@ -852,7 +887,7 @@ def 绘制保存异常点位(
     gdf["color"] = gdf[column].map(colors)
     all_null = (gdf["color"] == "white").all()
     if all_null:
-        return
+        return None
     ax.scatter(gdf.geometry.x, gdf.geometry.y, marker="o", s=30, color=gdf["color"])
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
@@ -894,13 +929,12 @@ def 绘制保存异常点位(
     ax.legend(
         handles=legend_elements,
     )
-    canvas = FigureCanvas(fig)
-    return canvas
+    return fig
     # Path("./pic").mkdir(parents=True, exist_ok=True)
     # plt.savefig(f"./pic/{label}.png")
 
 
-def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
+def backgroundValue_anomaly_fig______(gdf, boundary_polygon_file=None, save=False):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
@@ -912,7 +946,7 @@ def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
     matplotlib.rcParams["font.family"] = "Times New Roman"
     boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=4547)
     ax = boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
-    colors = {"污染源": "red", "污染羽": "orange", "正常": "green"}
+    colors = {"√": "red", "污染羽": "orange", "×": "green"}
     gdf["color"] = gdf["污染类型"].map(colors)
     ax.scatter(gdf.geometry.x, gdf.geometry.y, marker="o", s=30, color=gdf["color"])
 
@@ -964,13 +998,7 @@ def 绘制污染点位分布V2(gdf, boundary_polygon_file=None, save=False):
         # loc="lower right", bbox_to_anchor=(1, 0)
     )
     plt.tight_layout()
-    canvas = FigureCanvas(fig)
-    return canvas
-
-    # if save:
-    #     plt.savefig("./ref/污染点位分布图.png")
-    # else:
-    #     plt.show()
+    return fig
 
 
 # * 用于报告生成的函数
