@@ -108,9 +108,14 @@ def show_multiple_plots(figs):
     显示多个 Figure 对象，每个图表在独立窗口
     :param figs: list[Figure]
     """
+    from matplotlib.figure import Figure
+
+    if isinstance(figs, Figure):
+        figs = [figs]
+    elif not isinstance(figs, list):
+        raise TypeError("参数必须是 Figure 或 list[Figure] 类型")
     app = QApplication.instance() or QApplication([])
     app.windows = []
-
     for i, fig in enumerate(figs):
         window = PlotWindow(fig)
         window.setWindowTitle(f"Plot {i+1} - {window.windowTitle()}")

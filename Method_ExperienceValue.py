@@ -19,10 +19,6 @@ from Method_Functions import (
     read_file_columns,
     point_dataset_preprocess,
     calculate_ExperienceValueMethod_scores,
-    绘制污染源区图,
-    绘制污染范围,
-    绘制超标点位,
-    污染等级识别,
 )
 from PredefinedData import (
     Software_info,
@@ -41,23 +37,25 @@ from CustomControl import (
     bottom_buttons,
     LoadingWindow,
 )
-from Pyside6Functions import center_window
+from Pyside6Functions import center_window, show_multiple_plots
 
 
 class worker(QThread):
     finished_signal = Signal()
-    # progress_signal = Signal(int)
     result_ready = Signal(object)
 
-    def __init__(self, point_dataset, options):
+    def __init__(self, point_dataset, options, outline_dataset):
         super().__init__()
         self.point_dataset = point_dataset
         self.options = options
+        self.outline_dataset = outline_dataset
 
     def run(self):
-        gdf = point_dataset_preprocess(self.point_dataset, self.options)
-        result_gdf = calculate_ExperienceValueMethod_scores(gdf)
-        self.result_ready.emit(result_gdf)
+        # gdf = point_dataset_preprocess(self.point_dataset, self.options)
+        result_dict = calculate_ExperienceValueMethod_scores(
+            self.point_dataset, self.options, self.outline_dataset
+        )
+        self.result_ready.emit(result_dict)
         self.finished_signal.emit()
 
 
@@ -121,19 +119,22 @@ class Attribute_Window(QWidget):
         print(contents)
         self.loading_window = LoadingWindow()
         self.loading_window.show()
-        self.worker = worker(self.point_dataset, contents)
+        self.worker = worker(
+            self.point_dataset, contents, outline_dataset=self.outline_dataset
+        )
         self.worker.result_ready.connect(self.on_worker_result_ready)
         self.worker.finished_signal.connect(self.worker.deleteLater)
         self.worker.start()
 
     @Slot(object)
-    def on_worker_result_ready(self, result_gdf):
+    def on_worker_result_ready(self, result_dict):
         if self.loading_window:
             self.loading_window.close()
             self.loading_window = None
         self.Contamination_identification_win = Contamination_identification_win(
-            result_gdf=result_gdf,
-            outline_dataset=self.outline_dataset,
+            result_dict=result_dict,
+            # result_gdf=result_gdf,
+            # outline_dataset=self.outline_dataset,
         )
         self.Contamination_identification_win.show()
         self.close()
@@ -146,12 +147,13 @@ class Attribute_Window(QWidget):
         self.plot_window.show()
 
     def get_combos_content(self):
+        combo1_content = lambda: (
+            None
+            if self.combos[0].currentText() == "No data available"
+            else self.combos[0].currentText()
+        )
         final_combos = {
-            "Point_ID": lambda: (
-                None
-                if self.combos[0].currentText() == "No data available"
-                else self.combos[0].currentText()
-            )
+            "Point_ID": combo1_content(),
         }
 
         for combo in self.combos[1:]:
@@ -169,10 +171,11 @@ class Attribute_Window(QWidget):
 
 class Contamination_identification_win(QWidget):
 
-    def __init__(self, result_gdf, outline_dataset):
+    def __init__(self, result_dict):
         super().__init__()
-        self.result_gdf = result_gdf
-        self.outline_dataset = outline_dataset
+        self.result_dict = result_dict
+        self.result_gdf = result_dict["gdf"]
+        self.outline_dataset = result_dict["outline_dataset"]
         self.initUI()
 
     def initUI(self):
@@ -214,7 +217,8 @@ class Contamination_identification_win(QWidget):
     def function_PCP(self):
         display_gdf = self.result_gdf[self.result_gdf["The_other_soil_gas_scores"] >= 6]
         self.result_win1 = function_win(
-            display_gdf,
+            result_dict=self.result_dict,
+            display_gdf=display_gdf,
             columns_to_display=[
                 "Point_ID",
                 "VOCs_Score",
@@ -225,7 +229,6 @@ class Contamination_identification_win(QWidget):
                 "H2S_Score",
                 "The_other_soil_gas_scores",
             ],
-            all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_PCP,
         )
@@ -236,7 +239,8 @@ class Contamination_identification_win(QWidget):
             self.result_gdf["The_other_soil_gas_scores"] >= 6
         ]
         self.result_win2 = function_win(
-            dis_play_gdf,
+            result_dict=self.result_dict,
+            dis_play_gdf=dis_play_gdf,
             columns_to_display=[
                 "Point_ID",
                 "The_other_soil_gas_scores",
@@ -252,6 +256,7 @@ class Contamination_identification_win(QWidget):
 
     def function_SOC(self):
         self.result_win4 = function_win(
+            result_dict=self.result_dict,
             display_gdf=self.result_gdf,
             columns_to_display=[
                 "Point_ID",
@@ -266,33 +271,24 @@ class Contamination_identification_win(QWidget):
         self.result_win4.show()
 
     def function_PLI(self):
-        pass
-        # gdf = point_dataset_preprocess(
-        #     self.point_dataset,
-        #     self.options,
-        # )
-
-        # gdf = 计算总体得分(gdf)
-        # 污染等级识别(
-        #     gdf,
-        #     self.outline_dataset,
-        # )
+        show_multiple_plots(self.result_dict.get("pollution_level_fig"))
 
 
 class function_win(QWidget):
 
     def __init__(
         self,
+        result_dict,
         display_gdf,
         columns_to_display,
-        all_gdf,
         outline_polygon_file,
         funtion_name,
     ):
         super().__init__()
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.result_dict = result_dict
+        self.all_gdf = result_dict["gdf"]
         self.gdf = display_gdf[columns_to_display]  #
-        self.all_gdf = all_gdf
         self.outline_polygon_file = outline_polygon_file
         self.function_name = funtion_name
         # 创建表格视图
@@ -325,7 +321,7 @@ class function_win(QWidget):
         layout.addWidget(self.plot_button)
         self.setLayout(layout)
 
-        self.setWindowTitle("GeoDataFrame Viewer")
+        self.setWindowTitle("Result Viewer")
         center_window(self)
 
     def export_to_excel(self):
@@ -362,33 +358,16 @@ class function_win(QWidget):
     def plot_data(self):
         if self.function_name == Secondary_Functions_of_ExperienceValue.function_PSA:
             try:
-                绘制污染源区图(self.all_gdf, self.outline_polygon_file)
+                show_multiple_plots(self.result_dict.get("source_fig"))
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
         elif self.function_name == Secondary_Functions_of_ExperienceValue.function_SOC:
             try:
-                绘制污染范围(self.all_gdf, self.outline_polygon_file)
+                show_multiple_plots(self.result_dict.get("scope_fig"))
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
         elif self.function_name == Secondary_Functions_of_ExperienceValue.function_PCP:
             try:
-                绘制超标点位(self.all_gdf, self.outline_polygon_file)
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
-
-    def Contamination_identification(self):
-        if self.function_name == Secondary_Functions_of_ExperienceValue.function_PSA:
-            try:
-                绘制污染源区图(self.all_gdf, self.outline_polygon_file)
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
-        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_SOC:
-            try:
-                绘制污染范围(self.all_gdf, self.outline_polygon_file)
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
-        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_PCP:
-            try:
-                绘制超标点位(self.all_gdf, self.outline_polygon_file)
+                show_multiple_plots(self.result_dict.get("exceed_fig"))
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")

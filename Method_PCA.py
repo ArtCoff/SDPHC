@@ -89,95 +89,95 @@ class Attribute_Window_PCA(Attribute_Window):
         self.close()
 
 
-class PCAplot(QWidget):
-    def __init__(self, point_dataset, options, outline_dataset):
-        super().__init__()
-        self.point_dataset = point_dataset
-        self.outline_dataset = outline_dataset
-        self.pca_columns = process_no_data_list(options)
-        self.setGeometry(100, 100, 600, 300)
-        # Process the data
-        # self.pca_results, self.pca_loadings, self.pca_var_ratio, self.pca_scores = (
-        #     process_PCA(point_dataset, pca_columns=self.pca_columns)
-        # )
+# class PCAplot(QWidget):
+#     def __init__(self, point_dataset, options, outline_dataset):
+#         super().__init__()
+#         self.point_dataset = point_dataset
+#         self.outline_dataset = outline_dataset
+#         self.pca_columns = process_no_data_list(options)
+#         self.setGeometry(100, 100, 600, 300)
+#         # Process the data
+#         # self.pca_results, self.pca_loadings, self.pca_var_ratio, self.pca_scores = (
+#         #     process_PCA(point_dataset, pca_columns=self.pca_columns)
+#         # )
 
-        # 创建主布局
-        self.setWindowTitle(self.tr(Software_info.software_name.value))
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        self.layout = QHBoxLayout()
-        self.total_layout = QVBoxLayout()
-        self.bottom_buttons = bottom_buttons()
-        self.bottom_buttons.next_btn.clicked.connect(self.on_next_clicked)
-        self.bottom_buttons.help_btn.clicked.connect(self.on_help_clicked)
-        self.bottom_buttons.next_btn_clicked.connect(self.on_next_clicked)
-        self.bottom_buttons.help_btn_clicked.connect(self.on_help_clicked)
-        self.total_layout.addLayout(self.layout)
-        self.total_layout.addWidget(self.bottom_buttons)
-        self.setLayout(self.total_layout)
-        center_window(self)
+#         # 创建主布局
+#         self.setWindowTitle(self.tr(Software_info.software_name.value))
+#         self.setWindowIcon(QIcon(r"./static/icon.ico"))
+#         self.layout = QHBoxLayout()
+#         self.total_layout = QVBoxLayout()
+#         self.bottom_buttons = bottom_buttons()
+#         self.bottom_buttons.next_btn.clicked.connect(self.on_next_clicked)
+#         self.bottom_buttons.help_btn.clicked.connect(self.on_help_clicked)
+#         self.bottom_buttons.next_btn_clicked.connect(self.on_next_clicked)
+#         self.bottom_buttons.help_btn_clicked.connect(self.on_help_clicked)
+#         self.total_layout.addLayout(self.layout)
+#         self.total_layout.addWidget(self.bottom_buttons)
+#         self.setLayout(self.total_layout)
+#         center_window(self)
 
-        # self.plot_names = [
-        #     "PCA variance contribution",
-        #     "PCA loading plot",
-        #     "PCA Biplot",
-        # ]
+#         # self.plot_names = [
+#         #     "PCA variance contribution",
+#         #     "PCA loading plot",
+#         #     "PCA Biplot",
+#         # ]
 
-        class plot_param(Enum):
-            PCA_variance_contribution = 0
-            PCA_loading_plot = 1
-            PCA_Biplot = 2
+#         class plot_param(Enum):
+#             PCA_variance_contribution = 0
+#             PCA_loading_plot = 1
+#             PCA_Biplot = 2
 
-        for i in range(3):
-            canvas = self.create_plot(
-                plot_param=plot_param(i),
-                name=self.plot_names[i],
-            )
-            temp_layout = QVBoxLayout()
-            toolbar = NavigationToolbar(canvas, self)
-            temp_layout.addWidget(toolbar)
-            temp_layout.addWidget(canvas)
-            qf = QFrame()
-            qf.setLayout(temp_layout)
-            self.layout.addWidget(qf)
+#         for i in range(3):
+#             canvas = self.create_plot(
+#                 plot_param=plot_param(i),
+#                 name=self.plot_names[i],
+#             )
+#             temp_layout = QVBoxLayout()
+#             toolbar = NavigationToolbar(canvas, self)
+#             temp_layout.addWidget(toolbar)
+#             temp_layout.addWidget(canvas)
+#             qf = QFrame()
+#             qf.setLayout(temp_layout)
+#             self.layout.addWidget(qf)
 
-    def create_plot(self, plot_param, name):
-        if plot_param == plot_param.PCA_variance_contribution:
-            fig = plot_PCA_variance_contribution(self.pca_var_ratio)
-        elif plot_param == plot_param.PCA_loading_plot:
-            fig = plot_PCA_loading_plot(self.pca_loadings, self.pca_var_ratio)
-        elif plot_param == plot_param.PCA_Biplot:
-            fig = plot_PCA_Biplot(
-                self.pca_results, self.pca_loadings, self.pca_var_ratio
-            )
-        # 创建画布
-        canvas = FigureCanvas(fig)
-        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # 关键
-        canvas.setMinimumSize(300, 300)  # 设置最小尺寸约束
-        return canvas
+#     def create_plot(self, plot_param, name):
+#         if plot_param == plot_param.PCA_variance_contribution:
+#             fig = plot_PCA_variance_contribution(self.pca_var_ratio)
+#         elif plot_param == plot_param.PCA_loading_plot:
+#             fig = plot_PCA_loading_plot(self.pca_loadings, self.pca_var_ratio)
+#         elif plot_param == plot_param.PCA_Biplot:
+#             fig = plot_PCA_Biplot(
+#                 self.pca_results, self.pca_loadings, self.pca_var_ratio
+#             )
+#         # 创建画布
+#         canvas = FigureCanvas(fig)
+#         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # 关键
+#         canvas.setMinimumSize(300, 300)  # 设置最小尺寸约束
+#         return canvas
 
-    def on_next_clicked(self):
-        self.hide()
-        self.pc1_interpolation = PC1_Interpolation(
-            point_dataset=self.point_dataset,
-            outline_dataset=self.outline_dataset,
-            pca_scores=self.pca_scores,
-        )
-        self.pc1_interpolation.show()
+#     def on_next_clicked(self):
+#         self.hide()
+#         self.pc1_interpolation = PC1_Interpolation(
+#             point_dataset=self.point_dataset,
+#             outline_dataset=self.outline_dataset,
+#             pca_scores=self.pca_scores,
+#         )
+#         self.pc1_interpolation.show()
 
-    def on_help_clicked(self):
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle(self.tr("Help"))  # 设置标题
-        msg_box.setText(
-            self.tr(
-                """
-            PCA variance contribution: The contribution of each principal component to the total variance.\n
-            PCA loading plot: The loading plot of each principal component.\n
-            PCA Biplot: The biplot of PCA.\n
-            """
-            )
-        )
-        msg_box.setStandardButtons(QMessageBox.Ok)
-        msg_box.exec_()
+#     def on_help_clicked(self):
+#         msg_box = QMessageBox(self)
+#         msg_box.setWindowTitle(self.tr("Help"))  # 设置标题
+#         msg_box.setText(
+#             self.tr(
+#                 """
+#             PCA variance contribution: The contribution of each principal component to the total variance.\n
+#             PCA loading plot: The loading plot of each principal component.\n
+#             PCA Biplot: The biplot of PCA.\n
+#             """
+#             )
+#         )
+#         msg_box.setStandardButtons(QMessageBox.Ok)
+#         msg_box.exec_()
 
 
 class PC1_Interpolation(QWidget):

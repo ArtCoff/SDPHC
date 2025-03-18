@@ -76,7 +76,7 @@ def plot_basic_info(
         return None
 
 
-def get_gdf_options(datapoints_shp):
+def read_file_columns(datapoints_shp):
     import geopandas as gpd
 
     gdf = gpd.read_file(datapoints_shp, chunksize=1)
@@ -207,19 +207,9 @@ def point_dataset_preprocess(point_dataset, options):
 
 
 def calculate_ExperienceValueMethod_scores(
-    gdf, abnormal_score_config: dict = abnormal_score_config
+    gdf, options, boundary_file, abnormal_score_config: dict = abnormal_score_config
 ):
-    """
-    为DataFrame每一行计算得分并追加结果
-
-    参数:
-    gdf (gpd.DataFrame): 原始数据
-    score_map (dict): 评分规则字典（与之前相同）
-    indicators (list): 需要计算的指标列名列表，若为None则使用score_map的所有键
-
-    返回:
-    gpd.DataFrame: 包含原始数据和新增得分列的DataFrame
-    """
+    gdf = point_dataset_preprocess(gdf, options)
     # 确定需要处理的指标列
     indicators = list(abnormal_score_config.keys())
 
@@ -241,7 +231,25 @@ def calculate_ExperienceValueMethod_scores(
     gdf["Contamination_type"] = gdf.apply(计算单个污染类型, axis=1)
     gdf["Scope_of_contamination"] = gdf.apply(判断污染范围, axis=1)
 
-    return gdf
+    result_dict = {}
+    result_dict["gdf"] = gdf
+    result_dict["outline_dataset"] = boundary_file
+    fig_dict = experienceValue_anomaly_fig(gdf, boundary_file)
+    result_dict.update(fig_dict)
+    return result_dict
+
+
+def experienceValue_anomaly_fig(
+    gdf,
+    boundary_polygon_file,
+    epsg_code=Drawing_specifications.EPSG_code,
+):
+    result_dict = {}
+    result_dict["source_fig"] = 绘制污染源区图(gdf, boundary_polygon_file, epsg_code)
+    result_dict["scope_fig"] = 绘制污染范围(gdf, boundary_polygon_file, epsg_code)
+    result_dict["exceed_fig"] = 绘制超标点位(gdf, boundary_polygon_file, epsg_code)
+    result_dict["pollution_level_fig"] = 污染等级识别(gdf, boundary_polygon_file)
+    return result_dict
 
 
 def 判断污染范围(row):
@@ -260,14 +268,6 @@ def 计算单个污染类型(row):
         return "Scores＜6"
 
 
-# 读取gpkg或者shp文件的列名
-def read_file_columns(file_path):
-    import geopandas as gpd
-
-    gdf = gpd.read_file(file_path)
-    return gdf.columns.tolist()
-
-
 def 绘制污染源区图(
     gdf, boundary_polygon_file, epsg_code=Drawing_specifications.EPSG_code
 ):
@@ -275,6 +275,8 @@ def 绘制污染源区图(
     import matplotlib
     import matplotlib.pyplot as plt
 
+    fig = Figure(figsize=(10, 8), dpi=90)
+    ax = fig.add_subplot(111)
     # matplotlib.rcParams["font.family"] = "SimSun"
     matplotlib.rcParams["font.family"] = "Times New Roman"
     # 设置颜色映射，按 'Category' 分配颜色
@@ -284,12 +286,8 @@ def 绘制污染源区图(
         "Scores＜6": "green",
     }
     gdf["color"] = gdf["Contamination_type"].map(colors)
-    if boundary_polygon_file != "":
-        boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(
-            epsg=epsg_code
-        )
-        ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
-
+    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
+    boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     gdf.plot(ax=ax, color=gdf["color"], markersize=30)
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
@@ -329,7 +327,7 @@ def 绘制污染源区图(
         ),
     ]
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
-    plt.show()
+    return fig
 
 
 def 绘制污染范围(
@@ -341,11 +339,13 @@ def 绘制污染范围(
     from matplotlib import ticker
     from matplotlib.lines import Line2D
 
+    fig = Figure(figsize=(10, 8), dpi=90)
+    ax = fig.add_subplot(111)
     matplotlib.rcParams["font.family"] = "Times New Roman"
     boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
     colors = {1: "orange", 0: "green"}
     gdf["color"] = gdf["Scope_of_contamination"].map(colors)
-    ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
+    boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     ax.scatter(gdf.geometry.x, gdf.geometry.y, marker="^", s=30, color=gdf["color"])
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
@@ -376,7 +376,7 @@ def 绘制污染范围(
     # 添加图例到右下角
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
-    plt.show()
+    return fig
 
 
 def 绘制超标点位(
@@ -387,9 +387,11 @@ def 绘制超标点位(
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
 
+    fig = Figure(figsize=(10, 8), dpi=90)
+    ax = fig.add_subplot(111)
     matplotlib.rcParams["font.family"] = "Times New Roman"
     boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
-    ax = boundary_polygon_gdf.plot(facecolor="none", edgecolor="red")
+    boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     gdf.plot(
         ax=ax,
         color="red",
@@ -415,7 +417,7 @@ def 绘制超标点位(
     # 添加图例到右下角
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
-    plt.show()
+    return fig
 
 
 # 将掩膜后的数据导出为 GeoTIFF 文件
@@ -472,6 +474,8 @@ def 污染等级识别(gdf, boundary_polygon_file):
     from rasterio.plot import show
     from rasterio.io import MemoryFile
 
+    fig = Figure(figsize=(10, 8), dpi=90)
+    ax = fig.add_subplot(111)
     boundary_polygon = gpd.read_file(boundary_polygon_file).to_crs(
         epsg=Drawing_specifications.EPSG_code
     )
@@ -508,7 +512,6 @@ def 污染等级识别(gdf, boundary_polygon_file):
     import matplotlib
 
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    fig, ax = plt.subplots(figsize=(10, 8))
     im = ax.imshow(
         masked_grid_z.T,
         extent=(
@@ -525,7 +528,7 @@ def 污染等级识别(gdf, boundary_polygon_file):
     add_scalebar(ax, location="lower left")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
-    plt.scatter(points[:, 0], points[:, 1], c="red", label="Data Points")
+    ax.scatter(points[:, 0], points[:, 1], c="red", label="Data Points")
     cbar = plt.colorbar(im, ax=ax)
     cbar.set_label("Contamination risk", rotation=270, labelpad=20)
     # 在colorbar顶部添加文字说明
@@ -537,8 +540,8 @@ def 污染等级识别(gdf, boundary_polygon_file):
     cbar.ax.text(1.4, 0.05, "Low", ha="right", va="top", transform=cbar.ax.transAxes)
 
     boundary_coords = np.array(boundary_poly.exterior.coords)
-    plt.plot(boundary_coords[:, 0], boundary_coords[:, 1], "r-", lw=1, label="Boundary")
-    plt.show()
+    ax.plot(boundary_coords[:, 0], boundary_coords[:, 1], "r-", lw=1, label="Boundary")
+    return fig
 
 
 # * Background Value Method #######################

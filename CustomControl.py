@@ -1,6 +1,14 @@
 import sys
 from enum import Enum
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QTranslator, QPoint, QPointF
+from PySide6.QtCore import (
+    Qt,
+    QEvent,
+    QAbstractTableModel,
+    Signal,
+    QTranslator,
+    QPoint,
+    QSettings,
+)
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -223,7 +231,7 @@ class LanguageSwitcher(QWidget):
         super().__init__()
         self.translator_zh = QTranslator()
         self.translator_en = QTranslator()
-        self.current_language = "zh"  # 默认语言
+        self.current_language = "en"  # 默认语言
         self.initUI()
 
     def initUI(self):
@@ -239,6 +247,7 @@ class LanguageSwitcher(QWidget):
 
         # 添加到布局
         self.layout.addWidget(self.language_button)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
         # 加载初始翻译
@@ -250,6 +259,8 @@ class LanguageSwitcher(QWidget):
             self.current_language = "en"
         else:
             self.current_language = "zh"
+        settings = QSettings("HFUT", "MIM_GUI")
+        settings.setValue("language", self.current_language)
         self.load_translation(self.current_language)
         self.update_button_text()
         self.language_changed.emit(self.current_language)  # 发射语言切换信号
@@ -259,10 +270,10 @@ class LanguageSwitcher(QWidget):
         QApplication.instance().removeTranslator(self.translator_zh)
         QApplication.instance().removeTranslator(self.translator_en)
         if language == "zh":
-            self.translator_zh.load("translation_zh.qm")
+            self.translator_zh.load("zh_CN.qm")
             QApplication.instance().installTranslator(self.translator_zh)
         else:
-            self.translator_en.load("translation_en.qm")
+            self.translator_en.load("en_US.qm")
             QApplication.instance().installTranslator(self.translator_en)
 
     def update_button_text(self):
@@ -271,6 +282,11 @@ class LanguageSwitcher(QWidget):
             self.language_button.setText("EN")
         else:
             self.language_button.setText("中文")
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.LanguageChange:
+            self.update_button_text()
+        super().changeEvent(event)
 
 
 class GeoDataFrameModel(QAbstractTableModel):

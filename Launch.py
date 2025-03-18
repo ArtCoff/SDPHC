@@ -1,6 +1,6 @@
 import sys
 from enum import Enum
-from PySide6.QtCore import Qt, QThreadPool
+from PySide6.QtCore import Qt, QEvent, QSettings
 from PySide6.QtGui import QFont, QFontDatabase, QIcon, QScreen
 from PySide6.QtWidgets import (
     QApplication,
@@ -37,13 +37,14 @@ class Start_Window(QWidget):
         self.current_attribute_window = None
 
     def initUI(self):
+        # settings = QSettings("HFUT", "MIM_GUI")
+        # self.current_language = settings.value("language", "en")
+        # self.load_translation(self.current_language)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setWindowTitle(self.tr(Software_info.software_name.value))
-
         self.setMinimumSize(400, 300)
         self.language_switcher = LanguageSwitcher()
-        self.current_language = "EN"
-        self.language_switcher.language_changed.connect(self.update_language)
+        # self.language_switcher.language_changed.connect(self.update_language)
         form_layout = QFormLayout()
         self.outline_dataset = file_line_edit()
         self.point_dataset = file_line_edit()
@@ -126,10 +127,25 @@ class Start_Window(QWidget):
     def update_method(self, method):
         self.current_method_status = method
 
-    def update_language(self, language):
-        self.current_language = language
-        print(self.current_language)
-        # self.language_switcher.update_button_text()
+    # def update_language(self, lang):
+    #     print(f"Switch language to {lang}")
+    #     self.update()
+
+    # def load_translation(self, lang):
+    #     # 语言切换由 LanguageSwitcher 控制，此处只需初始化
+    #     pass  # 主逻辑在 LanguageSwitcher 中
+
+    # def changeEvent(self, event):
+    #     # 捕获语言变化事件
+    #     if event.type() == QEvent.LanguageChange:
+    #         self.restart()
+    #     # super().changeEvent(event)
+
+    # def restart(self):
+    #     self.close()
+    #     new_window = Start_Window()
+    #     new_window.show()
+    #     self.setParent(new_window)
 
 
 # 读取配置文件 settings.txt 的函数
@@ -165,7 +181,7 @@ if __name__ == "__main__":
     qt_scale_factor = settings.get("QT_SCALE_FACTOR", "1.00")
     os.environ["QT_SCALE_FACTOR"] = qt_scale_factor
     app = QApplication(sys.argv)
-
+    app.setStyle("Windows")
     # 正确获取主屏幕
     font_family = settings.get("FONT_FAMILY", "Arial")
     font_size = int(settings.get("FONT_SIZE", "12"))
