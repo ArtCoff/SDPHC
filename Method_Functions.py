@@ -1125,6 +1125,8 @@ def return_PCA_results(point_dataset, options, outline_dataset):
     pca_results, pca_loadings, pca_var_ratio, pca_scores = process_PCA(
         gdf=gdf, pca_columns=pca_columns
     )
+    gdf["PC1_Score"] = pca_scores["PC1"]
+    PC1_score_fig = plot_PC1_score(gdf, boundary_gdf, column="PC1_Score")
     PCA_variance_contribution_fig = plot_PCA_variance_contribution(pca_var_ratio)
     PCA_loading_plot_fig = plot_PCA_loading_plot(pca_loadings, pca_var_ratio)
     PCA_Biplot_fig = plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio)
@@ -1139,6 +1141,9 @@ def return_PCA_results(point_dataset, options, outline_dataset):
         )
         PC1_interpolation_figs[interpolation_method] = fig
     return {
+        "gdf": gdf,
+        "boundary_gdf": boundary_gdf,
+        "PC1_score_fig": PC1_score_fig,
         "PCA_variance_contribution_fig": PCA_variance_contribution_fig,
         "PCA_loading_plot_fig": PCA_loading_plot_fig,
         "PCA_Biplot_fig": PCA_Biplot_fig,
@@ -1470,8 +1475,60 @@ def add_common_elements(ax, boundary_gdf, points_gdf):
 #         return fig
 
 
-def plot_PC1_score() -> Figure:
-    pass
+def plot_PC1_score(
+    points_gdf: gpd.GeoDataFrame,
+    boundary_gdf: gpd.GeoDataFrame,
+    column: str,
+    cmap="viridis",
+    # cmap="plasma",
+    figsize=(10, 8),
+    dpi=300,
+    fontsize=12,
+    labelpad=15,
+) -> Figure:
+    import geopandas as gpd
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    from matplotlib import cm
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    import numpy as np
+
+    # 设置全局样式
+    mpl.rcParams.update(
+        {
+            "font.family": "Times New Roman",
+            "font.size": fontsize,
+            "axes.linewidth": 0.8,
+            "axes.labelweight": "bold",
+            "savefig.dpi": dpi,
+            "figure.facecolor": "white",
+        }
+    )
+
+    # 创建画布
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.2)
+
+    # 绘制点图
+    points = points_gdf.plot(
+        ax=ax,
+        column=column,
+        cmap=cmap,
+        markersize=20,
+        legend=True,
+        cax=cax,  # 指定colorbar位置
+        legend_kwds={"label": f"{column} (unit)", "orientation": "vertical"},
+    )
+
+    # 绘制边界
+    boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red", linewidth=1)
+
+    # 坐标轴美化
+    ax.tick_params(axis="both", which="major", labelsize=fontsize - 2)
+    ax.set_xlabel("Longitude", weight="bold", labelpad=labelpad)
+    ax.set_ylabel("Latitude", weight="bold", labelpad=labelpad)
+    return fig
 
 
 def plot_PC1_interpolation(
