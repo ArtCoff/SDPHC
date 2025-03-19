@@ -180,86 +180,225 @@ class Attribute_Window_PCA(Attribute_Window):
 #         msg_box.exec_()
 
 
+# class PC1_Interpolation(QWidget):
+#     def __init__(self, result_dict):
+#         super().__init__()
+#         self.result_dict = result_dict
+#         self.initUI()
+
+#     def initUI(self):
+#         self.setWindowTitle("PC1 interpolation plot")
+#         self.setWindowIcon(QIcon(r"./static/icon.ico"))
+#         self.setGeometry(100, 100, 600, 300)
+#         self.setMinimumSize(300, 300)
+#         self.layout = QVBoxLayout()
+#         self.canvas_layout = QVBoxLayout()
+#         self.function_layout = QHBoxLayout()
+#         self.canvas = self.create_plot()
+#         self.toolbar = NavigationToolbar(self.canvas, self)
+#         self.canvas_layout.addWidget(self.toolbar)
+#         self.canvas_layout.addWidget(self.canvas)
+#         #
+#         self.interpolation_method = Interpolation_method_selection()
+#         self.interpolation_method.Interpolation_method.connect(self.update_plot)
+#         self.check_btn = check_btn()
+#         self.help_btn = help_btn()
+#         self.show_PCA_plots_btn = QPushButton("Show PCA analysis plots")
+#         self.show_PCA_plots_btn.clicked.connect(self.display_PCA_plots)
+#         self.check_btn.clicked.connect(self.on_check_clicked)
+#         self.help_btn.clicked.connect(self.on_help_clicked)
+
+#         self.function_layout.addWidget(self.interpolation_method)
+#         self.function_layout.addWidget(self.show_PCA_plots_btn)
+#         self.function_layout.addStretch()
+#         self.function_layout.addWidget(self.help_btn)
+#         self.function_layout.addWidget(self.check_btn)
+
+#         self.layout.addLayout(self.canvas_layout)
+#         self.layout.addLayout(self.function_layout)
+#         self.setLayout(self.layout)
+#         center_window(self)
+
+#     def update_plot(self, interpolation_method):
+
+#         self.canvas_layout.removeWidget(self.canvas)  # 移除旧画布
+#         # 删除旧画布和控件
+#         self.canvas_layout.removeWidget(self.canvas)
+#         self.canvas.deleteLater()
+#         self.toolbar.deleteLater()
+#         # 重新创建图像并添加到布局
+#         self.canvas = self.create_plot(interpolation_method=interpolation_method)
+#         self.canvas.setMinimumSize(400, 400)
+#         self.toolbar = NavigationToolbar(self.canvas, self)
+#         self.canvas_layout.addWidget(self.toolbar)
+#         self.canvas_layout.addWidget(self.canvas)
+
+#     def create_plot(self, interpolation_method="Nearest"):
+#         fig = self.result_dict.get("PC1_interpolation_figs").get(interpolation_method)
+#         canvas = FigureCanvas(fig)
+#         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # 关键
+#         canvas.setMinimumSize(400, 300)  # 设置最小尺寸约束
+#         return canvas
+
+#     def display_PCA_plots(self):
+#         figs = [
+#             self.result_dict.get("PCA_variance_contribution_fig"),
+#             self.result_dict.get("PCA_loading_plot_fig"),
+#             self.result_dict.get("PCA_Biplot_fig"),
+#         ]
+#         show_multiple_plots(figs)
+
+#     def on_check_clicked(self):
+#         self.close()
+
+#     def on_help_clicked(self):
+#         msg_box = QMessageBox(self)
+#         msg_box.setWindowTitle(self.tr("Help"))
+#         msg_box.setText(
+#             self.tr(
+#                 """
+#             PC1 interpolation plot: The interpolation plot of PC1 scores.\n
+#             """
+#             )
+#         )
+#         msg_box.setStandardButtons(QMessageBox.Ok)
+#         msg_box.exec_()
+
+
+# class PlotWindow(QWidget):
+#     def __init__(self, fig):
+#         super().__init__()
+#         self.setWindowTitle("Geospatial Data Visualization")
+#         self.setGeometry(100, 100, 400, 300)
+#         self.setWindowIcon(QIcon(r"./static/icon.ico"))
+#         self.setMinimumSize(400, 300)
+
+#         # 创建绘图区域
+#         self.canvas = None
+#         self.toolbar = None
+#         self.fig = fig
+#         # 安全初始化
+#         if not self.fig:
+#             QMessageBox.critical(self, "Error", self.tr("Invalid graphic objects"))
+#             self.close()
+
+#         # 设置界面
+#         self.setup_ui()
+
+#     def setup_ui(self):
+#         # 创建 FigureCanvas 对象
+#         self.canvas = FigureCanvas(self.fig)
+#         self.toolbar = NavigationToolbar(self.canvas, self)
+
+#         # 布局
+#         layout = QVBoxLayout()
+#         layout.addWidget(self.toolbar)
+#         layout.addWidget(self.canvas)
+#         self.setLayout(layout)
+
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QMessageBox,
+    QSizePolicy,
+)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+
 class PC1_Interpolation(QWidget):
     def __init__(self, result_dict):
         super().__init__()
         self.result_dict = result_dict
+        self.current_canvas = None  # 保存当前画布引用
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("PC1 interpolation plot")
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        self.setGeometry(100, 100, 300, 350)
-        self.setMinimumSize(300, 300)
-        self.layout = QVBoxLayout()
+        # 主布局
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(5)
+        main_layout.setContentsMargins(5, 5, 5, 5)  # 减少边距
+
+        # 顶部绘图区域
         self.canvas_layout = QVBoxLayout()
-        self.function_layout = QHBoxLayout()
-        self.canvas = self.create_plot()
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.canvas_layout.addWidget(self.toolbar)
-        self.canvas_layout.addWidget(self.canvas)
-        #
+        self.canvas_layout.setSpacing(0)
+        self.create_initial_plot()  # 初始化默认画布
+
+        # 底部功能区
+        function_layout = QHBoxLayout()
+        function_layout.setSpacing(10)
+
+        # 控件初始化
         self.interpolation_method = Interpolation_method_selection()
-        self.interpolation_method.Interpolation_method.connect(self.update_plot)
-        self.check_btn = check_btn()
+        self.show_PCA_btn = QPushButton("Show PCA Analysis")
         self.help_btn = help_btn()
-        self.show_PCA_plots_btn = QPushButton("Show PCA analysis plots")
-        self.show_PCA_plots_btn.clicked.connect(self.display_PCA_plots)
-        self.check_btn.clicked.connect(self.on_check_clicked)
-        self.help_btn.clicked.connect(self.on_help_clicked)
+        self.close_btn = check_btn()
 
-        self.function_layout.addWidget(self.interpolation_method)
-        self.function_layout.addWidget(self.show_PCA_plots_btn)
-        self.function_layout.addStretch()
-        self.function_layout.addWidget(self.help_btn)
-        self.function_layout.addWidget(self.check_btn)
+        # 按钮布局（左对齐功能控件，右对齐操作按钮）
+        function_layout.addWidget(self.interpolation_method)
+        function_layout.addWidget(self.show_PCA_btn)
+        function_layout.addStretch()  # 中间弹性空间
+        function_layout.addWidget(self.help_btn)
+        function_layout.addWidget(self.close_btn)
 
-        self.layout.addLayout(self.canvas_layout)
-        self.layout.addLayout(self.function_layout)
-        self.setLayout(self.layout)
+        # 信号连接
+        self.interpolation_method.Interpolation_method.connect(self.update_plot)
+        self.show_PCA_btn.clicked.connect(self.display_PCA_plots)
+        self.help_btn.clicked.connect(self.show_help)
+        self.close_btn.clicked.connect(self.close)
+
+        # 组合布局
+        main_layout.addLayout(self.canvas_layout)
+        main_layout.addLayout(function_layout)
+        self.setLayout(main_layout)
+
+        # 窗口属性
+        self.setWindowTitle("PC1 Interpolation Plot")
+        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setMinimumSize(600, 400)
         center_window(self)
 
-    def update_plot(self, interpolation_method):
+    def create_initial_plot(self):
+        """初始化默认画布（最近邻插值）"""
+        if self.current_canvas:
+            self.canvas_layout.removeWidget(self.current_canvas)
+            self.current_canvas.deleteLater()
 
-        self.canvas_layout.removeWidget(self.canvas)  # 移除旧画布
-        # 删除旧画布和控件
-        self.canvas_layout.removeWidget(self.canvas)
-        self.canvas.deleteLater()
-        self.toolbar.deleteLater()
-        # 重新创建图像并添加到布局
-        self.canvas = self.create_plot(interpolation_method=interpolation_method)
-        self.canvas.set_minimum_size(400, 400)
-        self.toolbar = NavigationToolbar(self.canvas, self)
+        fig = self.result_dict["PC1_interpolation_figs"]["Nearest"]
+        self.current_canvas = FigureCanvas(fig)
+        self.current_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar = NavigationToolbar(self.current_canvas, self)
+
         self.canvas_layout.addWidget(self.toolbar)
-        self.canvas_layout.addWidget(self.canvas)
+        self.canvas_layout.addWidget(self.current_canvas)
 
-    def create_plot(self, interpolation_method="Nearest"):
-        fig = self.result_dict.get("PC1_interpolation_figs").get(interpolation_method)
-        canvas = FigureCanvas(fig)
-        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # 关键
-        canvas.setMinimumSize(400, 300)  # 设置最小尺寸约束
-        return canvas
+    def update_plot(self, method):
+        try:
+            fig = self.result_dict["PC1_interpolation_figs"][method]
+
+            # 直接更新画布内容（无需重建控件）
+            self.current_canvas.figure = fig
+            self.current_canvas.draw()
+            self.toolbar.update()  # 同步工具栏状态
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to update plot: {str(e)}")
 
     def display_PCA_plots(self):
         figs = [
-            self.result_dict.get("PCA_variance_contribution_fig"),
-            self.result_dict.get("PCA_loading_plot_fig"),
-            self.result_dict.get("PCA_Biplot_fig"),
+            self.result_dict["PCA_variance_contribution_fig"],
+            self.result_dict["PCA_loading_plot_fig"],
+            self.result_dict["PCA_Biplot_fig"],
         ]
+        # 假设 show_multiple_plots 接受 Figure 对象列表
         show_multiple_plots(figs)
 
-    def on_check_clicked(self):
-        self.close()
-
-    def on_help_clicked(self):
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle(self.tr("Help"))
-        msg_box.setText(
-            self.tr(
-                """
-            PC1 interpolation plot: The interpolation plot of PC1 scores.\n
-            """
-            )
+    def show_help(self):
+        """优化后的帮助提示（支持国际化）"""
+        QMessageBox.information(
+            self,
+            self.tr("Help"),
+            self.tr("PC1 interpolation plot: The interpolation plot of PC1 scores."),
+            QMessageBox.Ok,
         )
-        msg_box.setStandardButtons(QMessageBox.Ok)
-        msg_box.exec_()

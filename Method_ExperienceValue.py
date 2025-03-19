@@ -143,7 +143,8 @@ class Attribute_Window(QWidget):
         fig = plot_basic_info(
             point_dataset=self.point_dataset, outline_dataset=self.outline_dataset
         )
-        self.plot_window = PlotWindow(fig)
+        # self.plot_window = PlotWindow(fig)
+        self.plot_window = show_multiple_plots(fig)
         self.plot_window.show()
 
     def get_combos_content(self):
@@ -240,7 +241,7 @@ class Contamination_identification_win(QWidget):
         ]
         self.result_win2 = function_win(
             result_dict=self.result_dict,
-            dis_play_gdf=dis_play_gdf,
+            display_gdf=dis_play_gdf,
             columns_to_display=[
                 "Point_ID",
                 "The_other_soil_gas_scores",
@@ -248,7 +249,7 @@ class Contamination_identification_win(QWidget):
                 "All_indicators_Scores",
             ],
             # ["点位编号", "其他土壤气得分", "氡气赋分", "所有指标得分"],
-            all_gdf=self.result_gdf,
+            # all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_PSA,
         )
@@ -264,7 +265,7 @@ class Contamination_identification_win(QWidget):
                 "Scope_of_contamination",
             ],
             # columns_to_display=["点位编号", "其他土壤气得分", "得分≥1"],
-            all_gdf=self.result_gdf,
+            # all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_SOC,
         )

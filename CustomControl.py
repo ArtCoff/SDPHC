@@ -373,7 +373,7 @@ class LoadingWindow(QWidget):
         self.setWindowFlag(Qt.WindowStaysOnTopHint)  # 置顶显示
         self.setWindowFlag(Qt.FramelessWindowHint)  # 无边框
         self.setWindowModality(Qt.ApplicationModal)  # 模态窗口
-        self.setFixedSize(200, 100)
+        self.setFixedSize(400, 300)
         title_bar = QWidget()
         title_bar_layout = QHBoxLayout()
         title_bar_layout.setContentsMargins(0, 0, 0, 0)
@@ -447,21 +447,3 @@ class PlotWindow(QWidget):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
-
-    # def closeEvent(self, event):
-    #     """重写关闭事件，确保资源释放"""
-    #     if self.canvas:
-    #         self.canvas.close()  # 关闭画布
-    #         self.canvas = None
-    #     if self.fig:
-    #         self.fig.clf()  # 清除图形
-    #         self.fig = None
-    #     self.deleteLater()  # 强制释放资源
-    #     super().closeEvent(event)
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    win = LoadingWindow()
-    win.show()
-    sys.exit(app.exec())

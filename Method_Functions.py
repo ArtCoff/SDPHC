@@ -44,8 +44,6 @@ def plot_basic_info(
 ):
     import geopandas as gpd
     from matplotlib import ticker, rcParams
-    from matplotlib.figure import Figure
-    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
     # 创建 matplotlib Figure 对象
     fig = Figure()
@@ -195,7 +193,7 @@ def calculate_score(
 def point_dataset_preprocess(point_dataset, options):
 
     # 读取数据
-    gdf = gpd.read_file(point_dataset)
+    gdf = gpd.read_file(point_dataset).to_crs(epsg=Drawing_specifications.EPSG_code)
     # gdf["Point_ID"] = gdf[options.get("Point_ID")]
     # Key的类型为枚举类型，无法直接使用
     for key, value in options.items():
@@ -204,6 +202,14 @@ def point_dataset_preprocess(point_dataset, options):
         else:
             gdf[key] = None
     return gdf
+
+
+def boundary_file_preprocess(boundary_file):
+    # 读取数据
+    boundary_gdf = gpd.read_file(boundary_file).to_crs(
+        epsg=Drawing_specifications.EPSG_code
+    )
+    return boundary_gdf
 
 
 def calculate_ExperienceValueMethod_scores(
@@ -265,7 +271,7 @@ def 计算单个污染类型(row):
     elif row["All_indicators_Scores"] >= 6 and row["VOCs_Score"] >= 1:
         return "Suspected_source_of_contamination"
     else:
-        return "Scores＜6"
+        return "Scores<6"
 
 
 def 绘制污染源区图(
@@ -283,11 +289,12 @@ def 绘制污染源区图(
     colors = {
         "Source_of_contamination": "red",
         "Suspected_source_of_contamination": "yellow",
-        "Scores＜6": "green",
+        "Scores<6": "green",
     }
-    gdf["color"] = gdf["Contamination_type"].map(colors)
+    gdf["color"] = gdf["Contamination_type"].map(colors).fillna("gray")
     boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
     boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
+    gdf = gdf.to_crs(epsg=epsg_code)
     gdf.plot(ax=ax, color=gdf["color"], markersize=30)
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
@@ -421,28 +428,28 @@ def 绘制超标点位(
 
 
 # 将掩膜后的数据导出为 GeoTIFF 文件
-def export_to_geotiff(filename, data, transform, crs):
-    from rasterio import Affine, MemoryFile
-    from rasterio.enums import Resampling
-    from rasterio.transform import from_origin
-    from rasterio.plot import show
-    from rasterio.io import MemoryFile
+# def export_to_geotiff(filename, data, transform, crs):
+#     from rasterio import Affine, MemoryFile
+#     from rasterio.enums import Resampling
+#     from rasterio.transform import from_origin
+#     from rasterio.plot import show
+#     from rasterio.io import MemoryFile
 
-    with MemoryFile() as memfile:
-        with memfile.open(
-            driver="GTiff",
-            height=data.shape[0],
-            width=data.shape[1],
-            count=1,
-            dtype="float32",
-            crs=crs,
-            transform=transform,
-        ) as dataset:
-            dataset.write(data, 1)
-            dataset.flush()
-            # 保存到文件
-            with open(filename, "wb") as f:
-                f.write(memfile.read())
+#     with MemoryFile() as memfile:
+#         with memfile.open(
+#             driver="GTiff",
+#             height=data.shape[0],
+#             width=data.shape[1],
+#             count=1,
+#             dtype="float32",
+#             crs=crs,
+#             transform=transform,
+#         ) as dataset:
+#             dataset.write(data, 1)
+#             dataset.flush()
+#             # 保存到文件
+#             with open(filename, "wb") as f:
+#                 f.write(memfile.read())
 
 
 def mask_with_polygon(grid_x, grid_y, grid_z, polygon):
@@ -462,86 +469,142 @@ def mask_with_polygon(grid_x, grid_y, grid_z, polygon):
     return masked_grid_z
 
 
-def 污染等级识别(gdf, boundary_polygon_file):
-    import numpy as np
-    import geopandas as gpd
-    import matplotlib.pyplot as plt
-    from scipy.interpolate import griddata
-    from shapely.ops import unary_union
-    from rasterio import Affine, MemoryFile
-    from rasterio.enums import Resampling
-    from rasterio.transform import from_origin
-    from rasterio.plot import show
-    from rasterio.io import MemoryFile
+import numpy as np
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+from shapely.ops import unary_union
+from rasterio import features
+from rasterio.transform import from_origin
 
-    fig = Figure(figsize=(10, 8), dpi=90)
-    ax = fig.add_subplot(111)
-    boundary_polygon = gpd.read_file(boundary_polygon_file).to_crs(
-        epsg=Drawing_specifications.EPSG_code
-    )
-    # 提取坐标
-    points = np.array([[p.x, p.y] for p in gdf.geometry])
 
-    # 根据是否存在总体得分属性，决定使用 total_score 还是 score
-    values = np.where(
-        gdf["All_indicators_Scores"].notna(),
-        gdf["All_indicators_Scores"],
-        gdf["The_other_soil_gas_scores"],
-    )
-    min_x, min_y, max_x, max_y = boundary_polygon.total_bounds
-    # 生成插值网格（100x100）
-    grid_x, grid_y = np.mgrid[min_x:max_x:300j, min_y:max_y:300j]
-    # 使用反距离权重法 (IDW) 进行插值
-    grid_z = griddata(points, values, (grid_x, grid_y), method="linear")
+def 污染等级识别(gdf, boundary_polygon_file, method="linear"):
+    try:
+        # 数据预处理
+        boundary = gpd.read_file(boundary_polygon_file).to_crs(
+            epsg=Drawing_specifications.EPSG_code
+        )
+        if gdf.crs != boundary.crs:
+            gdf = gdf.to_crs(boundary.crs)
 
-    # 获取边界多边形（假设为单个多边形）
-    boundary_poly = unary_union(boundary_polygon.geometry)
+        # 生成插值网格
+        min_x, min_y, max_x, max_y = boundary.total_bounds
+        grid_x, grid_y = np.mgrid[min_x:max_x:300j, min_y:max_y:300j]
+        points = np.column_stack((gdf.geometry.x, gdf.geometry.y))
+        values = gdf["All_indicators_Scores"].fillna(gdf["The_other_soil_gas_scores"])
+        grid_z = griddata(points, values, (grid_x, grid_y), method=method)
 
-    # 应用掩膜
-    masked_grid_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_poly)
+        # 应用掩膜
+        masked_z = mask_with_polygon(
+            grid_x, grid_y, grid_z, unary_union(boundary.geometry)
+        )
 
-    # 计算地理坐标系转换
-    transform = from_origin(
-        min_x,
-        max_y,
-        (max_x - min_x) / grid_x.shape[0],
-        (max_y - min_y) / grid_y.shape[1],
-    )
+        # 可视化
+        fig, ax = plt.subplots(figsize=(10, 8), dpi=90)
+        im = ax.imshow(
+            masked_z.T,
+            extent=(min_x, max_x, min_y, max_y),
+            origin="lower",
+            cmap="viridis",
+            interpolation="none",
+        )
+        add_north_arrow(ax)
+        add_scalebar(ax, location="lower left")
+        ax.scatter(points[:, 0], points[:, 1], c="red", s=4, label="Data Points")
 
-    # 可视化掩膜后的插值结果
-    import matplotlib
+        # 颜色条优化
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label("Contamination risk", rotation=270, labelpad=20)
+        cbar.ax.text(
+            0.5, 1.02, "High", ha="center", va="bottom", transform=cbar.ax.transAxes
+        )
+        cbar.ax.text(
+            0.5, -0.02, "Low", ha="center", va="top", transform=cbar.ax.transAxes
+        )
 
-    matplotlib.rcParams["font.family"] = "Times New Roman"
-    im = ax.imshow(
-        masked_grid_z.T,
-        extent=(
-            min_x,
-            max_x,
-            min_y,
-            max_y,
-        ),
-        origin="lower",
-        cmap="viridis",
-        interpolation="none",
-    )
-    add_north_arrow(ax)
-    add_scalebar(ax, location="lower left")
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.scatter(points[:, 0], points[:, 1], c="red", label="Data Points")
-    cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label("Contamination risk", rotation=270, labelpad=20)
-    # 在colorbar顶部添加文字说明
-    cbar.ax.text(
-        1.4, 0.95, "High", ha="right", va="bottom", transform=cbar.ax.transAxes
-    )
+        # 边界绘制（使用geopandas高效渲染）
+        boundary.boundary.plot(ax=ax, color="red", lw=1, label="Boundary")
+        ax.legend()
+        return fig
+    except Exception as e:
+        raise RuntimeError(f"Processing failed: {str(e)}")
 
-    # 在colorbar底部添加文字说明
-    cbar.ax.text(1.4, 0.05, "Low", ha="right", va="top", transform=cbar.ax.transAxes)
 
-    boundary_coords = np.array(boundary_poly.exterior.coords)
-    ax.plot(boundary_coords[:, 0], boundary_coords[:, 1], "r-", lw=1, label="Boundary")
-    return fig
+# def 污染等级识别(gdf, boundary_polygon_file):
+#     import numpy as np
+#     import geopandas as gpd
+#     import matplotlib.pyplot as plt
+#     from scipy.interpolate import griddata
+#     from shapely.ops import unary_union
+#     from rasterio.transform import from_origin
+
+#     fig = Figure(figsize=(10, 8), dpi=90)
+#     ax = fig.add_subplot(111)
+#     boundary_polygon = gpd.read_file(boundary_polygon_file).to_crs(
+#         epsg=Drawing_specifications.EPSG_code
+#     )
+#     # 提取坐标
+#     points = np.array([[p.x, p.y] for p in gdf.geometry])
+
+#     # 根据是否存在总体得分属性，决定使用 total_score 还是 score
+#     values = np.where(
+#         gdf["All_indicators_Scores"].notna(),
+#         gdf["All_indicators_Scores"],
+#         gdf["The_other_soil_gas_scores"],
+#     )
+#     min_x, min_y, max_x, max_y = boundary_polygon.total_bounds
+#     # 生成插值网格（100x100）
+#     grid_x, grid_y = np.mgrid[min_x:max_x:300j, min_y:max_y:300j]
+#     grid_z = griddata(points, values, (grid_x, grid_y), method="linear")
+
+#     # 获取边界多边形（假设为单个多边形）
+#     boundary_poly = unary_union(boundary_polygon.geometry)
+
+#     # 应用掩膜
+#     masked_grid_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_poly)
+
+#     # 计算地理坐标系转换
+#     transform = from_origin(
+#         min_x,
+#         max_y,
+#         (max_x - min_x) / grid_x.shape[0],
+#         (max_y - min_y) / grid_y.shape[1],
+#     )
+
+#     # 可视化掩膜后的插值结果
+#     import matplotlib
+
+#     matplotlib.rcParams["font.family"] = "Times New Roman"
+#     im = ax.imshow(
+#         masked_grid_z.T,
+#         extent=(
+#             min_x,
+#             max_x,
+#             min_y,
+#             max_y,
+#         ),
+#         origin="lower",
+#         cmap="viridis",
+#         interpolation="none",
+#     )
+#     add_north_arrow(ax)
+#     add_scalebar(ax, location="lower left")
+#     ax.set_xlabel("X")
+#     ax.set_ylabel("Y")
+#     ax.scatter(points[:, 0], points[:, 1], c="red", label="Data Points", s=4)
+#     cbar = plt.colorbar(im, ax=ax)
+#     cbar.set_label("Contamination risk", rotation=270, labelpad=20)
+#     # 在colorbar顶部添加文字说明
+#     cbar.ax.text(
+#         1.4, 0.95, "High", ha="right", va="bottom", transform=cbar.ax.transAxes
+#     )
+
+#     # 在colorbar底部添加文字说明
+#     cbar.ax.text(1.4, 0.05, "Low", ha="right", va="top", transform=cbar.ax.transAxes)
+
+#     boundary_coords = np.array(boundary_poly.exterior.coords)
+#     ax.plot(boundary_coords[:, 0], boundary_coords[:, 1], "r-", lw=1, label="Boundary")
+#     return fig
 
 
 # * Background Value Method #######################
@@ -933,8 +996,6 @@ def backgroundValue_anomaly_fig(
         handles=legend_elements,
     )
     return fig
-    # Path("./pic").mkdir(parents=True, exist_ok=True)
-    # plt.savefig(f"./pic/{label}.png")
 
 
 def backgroundValue_anomaly_fig______(gdf, boundary_polygon_file=None, save=False):
@@ -1055,6 +1116,7 @@ import seaborn as sns
 
 def return_PCA_results(point_dataset, options, outline_dataset):
     gdf = point_dataset_preprocess(point_dataset=point_dataset, options=options)
+    boundary_gdf = boundary_file_preprocess(outline_dataset)
     pca_columns = []
     for key, value in options.items():
         if value != None and type(value) == str:
@@ -1070,7 +1132,7 @@ def return_PCA_results(point_dataset, options, outline_dataset):
     interpolation_methods = ["Nearest", "Cubic", "IDW", "Kriging"]
     for interpolation_method in interpolation_methods:
         fig = plot_PC1_interpolation(
-            boundary_file=outline_dataset,
+            boundary_gdf=boundary_gdf,
             points_gdf=gdf,
             pca_scores=pca_scores,
             interpolation_method=interpolation_method,
@@ -1103,7 +1165,7 @@ def process_PCA(gdf, pca_columns):
 
 def plot_PCA_variance_contribution(pca_var_ratioa):
     # 绘制 PCA 方差贡献率图
-    fig = plt.figure(figsize=(4, 4))
+    fig = plt.figure(figsize=(6, 4))
     plt.bar(range(1, 4), pca_var_ratioa * 100, tick_label=["PC1", "PC2", "PC3"])
     plt.ylabel("Variance contribution rate(%)", fontsize=10)
     plt.xlabel("Principal component", fontsize=10)
@@ -1114,7 +1176,7 @@ def plot_PCA_variance_contribution(pca_var_ratioa):
 
 
 def plot_PCA_loading_plot(pca_loadings, pca_var_ratio):
-    fig, ax = plt.subplots(figsize=(4, 4))
+    fig, ax = plt.subplots(figsize=(6, 4))
     colors = sns.color_palette("hls", n_colors=len(pca_loadings.index))
     for i, variable in enumerate(pca_loadings.index):
         x = pca_loadings.loc[variable, "PC1"]
@@ -1171,7 +1233,7 @@ def plot_PCA_loading_plot(pca_loadings, pca_var_ratio):
 def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=100):
     pca_scores = pd.DataFrame(pca_results, columns=["PC1", "PC2", "PC3"])
     # sns.set_style("whitegrid")
-    fig, ax = plt.subplots(figsize=(4, 4), dpi=dpi)
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=dpi)
     ax.scatter(
         pca_scores["PC1"],
         pca_scores["PC2"],
@@ -1327,87 +1389,162 @@ def idw_interpolation(x, y, z, grid_x, grid_y, power=2):
 
 def add_common_elements(ax, boundary_gdf, points_gdf):
     boundary_gdf.plot(ax=ax, color="none", edgecolor="red", linewidth=2)
-    ax.scatter(points_gdf.geometry.x, points_gdf.geometry.y, c="black", marker="x")
+    ax.scatter(points_gdf.geometry.x, points_gdf.geometry.y, c="black", marker="x", s=2)
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
 
 
 # 定义绘图函数
+# def plot_PC1_interpolation(
+#     boundary_gdf,
+#     points_gdf,
+#     interpolation_method,
+#     pca_scores,
+# ):
+#     # 提取插值点坐标
+#     x = points_gdf.geometry.x
+#     y = points_gdf.geometry.y
+#     z = pca_scores["PC1"].values  # PCA得分
+#     grid_x, grid_y = np.mgrid[
+#         min(x) - 0.001 : max(x) + 0.001 : 100j, min(y) - 0.001 : max(y) + 0.001 : 100j
+#     ]
+#     fig = Figure(figsize=(8, 6), dpi=150)
+#     ax = fig.add_subplot(111)
+
+#     if interpolation_method == "Nearest":
+
+#         cmap = "gist_rainbow"
+#         grid_z_nearest = scipy_interpolation(x, y, z, grid_x, grid_y, method="nearest")
+#         # 绘制最近邻插值结果
+#         contour_nearest = ax.contourf(
+#             grid_x, grid_y, grid_z_nearest, cmap="coolwarm", levels=10
+#         )
+#         fig.colorbar(
+#             contour_nearest,
+#             ax=ax,
+#             label="PC1(Nearest)",
+#         )
+#         ax.set_title("Spatial distribution of contamination(Nearest interpolation)")
+#         add_common_elements(ax, boundary_gdf, points_gdf)
+#         return fig
+
+#     elif interpolation_method == "Cubic":
+#         # 绘制立方插值结果
+#         add_common_elements(ax, boundary_gdf, points_gdf)
+#         grid_z_cubic = scipy_interpolation(x, y, z, grid_x, grid_y, method="cubic")
+#         # 绘制最近邻插值结果
+#         contour_cubic = ax.contourf(
+#             grid_x, grid_y, grid_z_cubic, cmap="coolwarm", levels=10
+#         )
+#         fig.colorbar(contour_cubic, ax=ax, label="PC1(Cubic)")
+#         ax.set_title("Spatial distribution of contamination(Cubic interpolation)")
+#         add_common_elements(ax, boundary_gdf, points_gdf)
+#         return fig
+#     elif interpolation_method == "IDW":
+#         add_common_elements(ax, boundary_gdf, points_gdf)
+#         grid_z_idw = idw_interpolation(
+#             x, y, z, grid_x, grid_y, power=2
+#         )  # 使用默认幂次2进行IDW插值
+#         contour_idw = ax.contourf(grid_x, grid_y, grid_z_idw, cmap="jet", levels=10)
+#         fig.colorbar(contour_idw, ax=ax, label="PC1(IDW)")
+#         ax.set_title("Spatial distribution of contamination(IDW interpolation)")
+#         add_common_elements(ax, boundary_gdf, points_gdf)
+#         return fig
+
+#     elif interpolation_method == "Kriging":
+#         add_common_elements(ax, boundary_gdf, points_gdf)
+#         # 绘制克里金插值结果
+#         grid_z_kriging = kriging_interpolation(
+#             x,
+#             y,
+#             z,
+#             np.linspace(min(x) - 0.001, max(x) + 0.001, 100),
+#             np.linspace(min(y) - 0.001, max(y) + 0.001, 100),
+#         )
+#         contour_kriging = ax.contourf(
+#             grid_x, grid_y, grid_z_kriging, cmap="gist_rainbow", levels=10
+#         )
+#         fig.colorbar(contour_kriging, ax=ax, label="PC1(Kriging)")
+#         ax.set_title("Spatial distribution of contamination(Kriging interpolation)")
+#         add_common_elements(ax, boundary_gdf, points_gdf)
+#         return fig
+
+
+def plot_PC1_score() -> Figure:
+    pass
+
+
 def plot_PC1_interpolation(
-    boundary_file,
+    boundary_gdf,
     points_gdf,
     interpolation_method,
     pca_scores,
-):
-
-    boundary = gpd.read_file(boundary_file)
-
+) -> Figure:
     # 提取插值点坐标
     x = points_gdf.geometry.x
     y = points_gdf.geometry.y
-    z = pca_scores["PC1"].values  # PCA得分
+    z = pca_scores["PC1"].values
+
+    # 创建网格
     grid_x, grid_y = np.mgrid[
         min(x) - 0.001 : max(x) + 0.001 : 100j, min(y) - 0.001 : max(y) + 0.001 : 100j
     ]
-    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # 合并边界多边形
+    boundary_polygon = unary_union(boundary_gdf.geometry)
+
+    # 创建图形
+    fig = Figure(figsize=(8, 6), dpi=150)
+    ax = fig.add_subplot(111)
 
     if interpolation_method == "Nearest":
+        from scipy.interpolate import griddata
 
-        cmap = "gist_rainbow"
-        grid_z_nearest = scipy_interpolation(x, y, z, grid_x, grid_y, method="nearest")
-        # 绘制最近邻插值结果
-        contour_nearest = ax.contourf(
-            grid_x, grid_y, grid_z_nearest, cmap="coolwarm", levels=10
-        )
-        fig.colorbar(
-            contour_nearest,
-            ax=ax,
-            label="PC1(Nearest)",
-        )
-        ax.set_title("Spatial distribution of contamination(Nearest interpolation)")
-        add_common_elements(ax, boundary, points_gdf)
-        return fig
+        grid_z = griddata((x, y), z, (grid_x, grid_y), method="nearest")
+        masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
+
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="coolwarm", levels=10)
+        fig.colorbar(contour, ax=ax, label="PC1 (Nearest)")
+        ax.set_title("Nearest Neighbor Interpolation")
 
     elif interpolation_method == "Cubic":
-        # 绘制立方插值结果
-        add_common_elements(ax, boundary, points_gdf)
-        grid_z_cubic = scipy_interpolation(x, y, z, grid_x, grid_y, method="cubic")
-        # 绘制最近邻插值结果
-        contour_cubic = ax.contourf(
-            grid_x, grid_y, grid_z_cubic, cmap="coolwarm", levels=10
-        )
-        fig.colorbar(contour_cubic, ax=ax, label="PC1(Cubic)")
-        ax.set_title("Spatial distribution of contamination(Cubic interpolation)")
-        add_common_elements(ax, boundary, points_gdf)
-        return fig
+        from scipy.interpolate import griddata
+
+        grid_z = griddata((x, y), z, (grid_x, grid_y), method="cubic")
+        masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
+
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="coolwarm", levels=10)
+        fig.colorbar(contour, ax=ax, label="PC1 (Cubic)")
+        ax.set_title("Cubic Interpolation")
+
     elif interpolation_method == "IDW":
-        add_common_elements(ax, boundary, points_gdf)
-        grid_z_idw = idw_interpolation(
-            x, y, z, grid_x, grid_y, power=2
-        )  # 使用默认幂次2进行IDW插值
-        contour_idw = ax.contourf(grid_x, grid_y, grid_z_idw, cmap="jet", levels=10)
-        fig.colorbar(contour_idw, ax=ax, label="PC1(IDW)")
-        ax.set_title("Spatial distribution of contamination(IDW interpolation)")
-        add_common_elements(ax, boundary, points_gdf)
-        return fig
+        # 假设已实现IDW插值
+        grid_z = idw_interpolation(x, y, z, grid_x, grid_y, power=2)
+        masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
+
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
+        fig.colorbar(contour, ax=ax, label="PC1 (IDW)")
+        ax.set_title("Inverse Distance Weighting Interpolation")
 
     elif interpolation_method == "Kriging":
-        add_common_elements(ax, boundary, points_gdf)
-        # 绘制克里金插值结果
-        grid_z_kriging = kriging_interpolation(
+        # 假设已实现克里金插值
+        # grid_z = kriging_interpolation(x, y, z, grid_x, grid_y)
+        grid_z = kriging_interpolation(
             x,
             y,
             z,
             np.linspace(min(x) - 0.001, max(x) + 0.001, 100),
             np.linspace(min(y) - 0.001, max(y) + 0.001, 100),
         )
-        contour_kriging = ax.contourf(
-            grid_x, grid_y, grid_z_kriging, cmap="gist_rainbow", levels=10
-        )
-        fig.colorbar(contour_kriging, ax=ax, label="PC1(Kriging)")
-        ax.set_title("Spatial distribution of contamination(Kriging interpolation)")
-        add_common_elements(ax, boundary, points_gdf)
-        return fig
+        masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
+
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="gist_rainbow", levels=10)
+        fig.colorbar(contour, ax=ax, label="PC1 (Kriging)")
+        ax.set_title("Kriging Interpolation")
+
+    # 添加公共元素
+    add_common_elements(ax, boundary_gdf, points_gdf)
+    return fig
 
 
 if __name__ == "__main__":
