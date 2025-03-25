@@ -1,7 +1,6 @@
 import sys
-from enum import Enum
-from PySide6.QtCore import Qt, QEvent, QSettings
-from PySide6.QtGui import QFont, QFontDatabase, QIcon, QScreen
+from PySide6.QtCore import Qt, QTranslator
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QApplication,
     QMessageBox,
@@ -11,14 +10,13 @@ from PySide6.QtWidgets import (
     QFormLayout,
 )
 from app.PredefinedData import Software_info, Methods
-from app.Pyside6Functions import center_window
+from app.Pyside6Functions import AppStyle, center_window, load_settings
 from app.CustomControl import (
     file_line_edit,
     next_btn,
     help_btn,
     CustomRadioButtons,
     LanguageSwitcher,
-    bottom_buttons,
 )
 from methods.Method_ExperienceValue import Attribute_Window
 from methods.Method_BackgroundValue import Attribute_Window_BackgroundValue
@@ -37,15 +35,11 @@ class Start_Window(QWidget):
         self.current_attribute_window = None
 
     def initUI(self):
-        # settings = QSettings("HFUT", "MIM_GUI")
-        # self.current_language = settings.value("language", "en")
-        # self.load_translation(self.current_language)
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setWindowIcon(AppStyle.icon())
         self.setWindowTitle(self.tr(Software_info.software_name.value))
         self.resize(600, 400)
         self.setMinimumSize(400, 300)
         self.language_switcher = LanguageSwitcher()
-        # self.language_switcher.language_changed.connect(self.update_language)
         form_layout = QFormLayout()
         self.outline_dataset = file_line_edit()
         self.point_dataset = file_line_edit()
@@ -101,10 +95,11 @@ class Start_Window(QWidget):
         msg_box.exec_()
 
     def on_next_clicked(self):
-        # 检查输入数据集
         if not self.point_dataset.text():
             QMessageBox.critical(
-                self, "Dataset Error", self.tr("Survey point data should not be empty.")
+                self,
+                self.tr("Dataset Error"),
+                self.tr("Survey point data should not be empty."),
             )
             return
         attribute_window_class = self.attribute_window_factory.get(
@@ -128,52 +123,6 @@ class Start_Window(QWidget):
     def update_method(self, method):
         self.current_method_status = method
 
-    # def update_language(self, lang):
-    #     print(f"Switch language to {lang}")
-    #     self.update()
-
-    # def load_translation(self, lang):
-    #     # 语言切换由 LanguageSwitcher 控制，此处只需初始化
-    #     pass  # 主逻辑在 LanguageSwitcher 中
-
-    # def changeEvent(self, event):
-    #     # 捕获语言变化事件
-    #     if event.type() == QEvent.LanguageChange:
-    #         self.restart()
-    #     # super().changeEvent(event)
-
-    # def restart(self):
-    #     self.close()
-    #     new_window = Start_Window()
-    #     new_window.show()
-    #     self.setParent(new_window)
-
-
-# 读取配置文件 settings.txt 的函数
-def load_settings():
-    """
-    从 settings.txt 文件中读取配置参数。
-    :return: 配置字典
-    """
-    settings = {}
-    settings_path = os.path.abspath("settings.txt")  # 获取根目录下的 settings.txt
-    if not os.path.exists(settings_path):
-        print("配置文件 settings.txt 不存在，使用默认值。")
-        return settings
-
-    with open(settings_path, "r", encoding="utf-8") as file:
-        for line in file:
-            line = line.strip()
-            if line and not line.startswith("#"):  # 跳过注释和空行
-                try:
-                    key, value = line.split("=", 1)  # 分割键值对
-                    key = key.strip().strip('"')  # 去除多余的引号和空格
-                    value = value.strip().strip('"')
-                    settings[key] = value
-                except ValueError:
-                    print(f"忽略无效配置行：{line}")
-    return settings
-
 
 if __name__ == "__main__":
     import os
@@ -183,6 +132,11 @@ if __name__ == "__main__":
     os.environ["QT_SCALE_FACTOR"] = qt_scale_factor
     app = QApplication(sys.argv)
     # app.setStyle("Windows")
+    # 国际化
+    trans = QTranslator()
+    lang = settings.get("DEFAULT_LANG", "en_US")
+    trans.load(f"./locales/{lang}.qm")
+    app.installTranslator(trans)
 
     # 正确获取主屏幕
     font_family = settings.get("FONT_FAMILY", "Arial")

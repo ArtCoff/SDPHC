@@ -35,7 +35,7 @@ from app.CustomControl import (
     bottom_buttons,
     LoadingWindow,
 )
-from app.Pyside6Functions import center_window, show_multiple_plots
+from app.Pyside6Functions import center_window, show_multiple_plots, AppStyle
 
 
 class worker(QThread):
@@ -70,7 +70,7 @@ class Attribute_Window(QWidget):
         self.setWindowTitle(Software_info.software_name.value)
         self.resize(600, 400)
         self.setMinimumSize(400, 300)
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setWindowIcon(AppStyle.icon())
         self.plot_dataset_info_btn = QPushButton(
             self.tr("Displays an overview of the data")
         )
@@ -129,9 +129,7 @@ class Attribute_Window(QWidget):
             self.loading_window.close()
             self.loading_window = None
         self.Contamination_identification_win = Contamination_identification_win(
-            result_dict=result_dict,
-            # result_gdf=result_gdf,
-            # outline_dataset=self.outline_dataset,
+            result_dict=result_dict
         )
         self.Contamination_identification_win.show()
         self.close()

@@ -1,19 +1,14 @@
-import sys
 from enum import Enum
 from PySide6.QtCore import (
     Qt,
-    QEvent,
     QAbstractTableModel,
     Signal,
-    QTranslator,
     QPoint,
-    QSettings,
 )
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QMessageBox,
-    QTableView,
     QLabel,
     QWidget,
     QComboBox,
@@ -25,8 +20,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QVBoxLayout,
     QHBoxLayout,
-    QFormLayout,
-    QGridLayout,
     QProgressBar,
 )
 from app.PredefinedData import Methods
@@ -38,7 +31,7 @@ from PySide6.QtWidgets import (
 )
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from app.Pyside6Functions import center_window
+from app.Pyside6Functions import center_window, load_settings, update_config_value
 
 
 class file_line_edit(QLineEdit):
@@ -226,19 +219,15 @@ class WrapButton_EN(QPushButton):
 
 
 class LanguageSwitcher(QWidget):
-    language_changed = Signal(str)  # 语言切换信号
+    # language_changed = Signal(str)  # 语言切换信号
 
     def __init__(self):
         super().__init__()
-        self.translator_zh = QTranslator()
-        self.translator_en = QTranslator()
-        self.current_language = "en"  # 默认语言
+        self.current_language = load_settings().get("DEFAULT_LANG", "zh_CN")
         self.initUI()
 
     def initUI(self):
-        # 主布局
         self.layout = QVBoxLayout()
-
         # 语言切换按钮
         self.language_button = QPushButton()
         self.language_button.setFixedSize(60, 30)  # 设置按钮大小
@@ -251,43 +240,24 @@ class LanguageSwitcher(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
-        # 加载初始翻译
-        self.load_translation(self.current_language)
-
     def switch_language(self):
-        # 切换语言
-        if self.current_language == "zh":
-            self.current_language = "en"
-        else:
-            self.current_language = "zh"
-        settings = QSettings("HFUT", "MIM_GUI")
-        settings.setValue("language", self.current_language)
-        self.load_translation(self.current_language)
+        new_lang = "en_US" if self.current_language == "zh_CN" else "zh_CN"
         self.update_button_text()
-        self.language_changed.emit(self.current_language)  # 发射语言切换信号
-
-    def load_translation(self, language):
-        # 加载翻译文件
-        QApplication.instance().removeTranslator(self.translator_zh)
-        QApplication.instance().removeTranslator(self.translator_en)
-        if language == "zh":
-            self.translator_zh.load("zh_CN.qm")
-            QApplication.instance().installTranslator(self.translator_zh)
+        update_config_value("DEFAULT_LANG", new_lang)
+        # self.language_changed.emit(new_lang)
+        if new_lang == "zh_CN":
+            QMessageBox.information(self, "语言切换", "语言已修改，重启后生效。")
         else:
-            self.translator_en.load("en_US.qm")
-            QApplication.instance().installTranslator(self.translator_en)
+            QMessageBox.information(
+                self, "Language Changed", "Language changed. Restart to take effect."
+            )
 
     def update_button_text(self):
         # 更新按钮文本
-        if self.current_language == "zh":
-            self.language_button.setText("EN")
+        if self.current_language == "zh_CN":
+            self.language_button.setText("English")
         else:
             self.language_button.setText("中文")
-
-    def changeEvent(self, event):
-        if event.type() == QEvent.LanguageChange:
-            self.update_button_text()
-        super().changeEvent(event)
 
 
 class GeoDataFrameModel(QAbstractTableModel):
@@ -370,7 +340,7 @@ class LoadingWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        self.setWindowTitle("Loading")
+        self.setWindowTitle(self.tr("Loading"))
         self.setWindowFlag(Qt.WindowStaysOnTopHint)  # 置顶显示
         self.setWindowFlag(Qt.FramelessWindowHint)  # 无边框
         self.setWindowModality(Qt.ApplicationModal)  # 模态窗口
@@ -388,7 +358,7 @@ class LoadingWindow(QWidget):
         title_bar.setLayout(title_bar_layout)
         ###
         layout = QVBoxLayout()
-        self.label = QLabel("Processing, please wait...")
+        self.label = QLabel(self.tr("Processing, please wait..."))
         self.label.setFont(QFont("Arial", 10))
         self.label.setAlignment(Qt.AlignCenter)
         self.progress = QProgressBar()
@@ -422,9 +392,11 @@ class LoadingWindow(QWidget):
 class PlotWindow(QWidget):
     def __init__(self, fig):
         super().__init__()
+        from app.Pyside6Functions import AppStyle
+
         self.setWindowTitle("Data Visualization")
         self.setGeometry(100, 100, 400, 300)
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setWindowIcon(AppStyle.icon())
         self.setMinimumSize(400, 300)
 
         # 创建绘图区域
