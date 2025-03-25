@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from Method_Functions import (
+from app.Method_Functions import (
     point_dataset_preprocess,
     process_PCA,
     plot_PCA_variance_contribution,
@@ -22,8 +22,8 @@ from Method_Functions import (
     plot_PC1_interpolation,
     return_PCA_results,
 )
-from PredefinedData import Software_info
-from CustomControl import (
+from app.PredefinedData import Software_info
+from app.CustomControl import (
     next_btn,
     help_btn,
     check_btn,
@@ -31,8 +31,8 @@ from CustomControl import (
     LoadingWindow,
     bottom_buttons,
 )
-from Pyside6Functions import center_window, show_multiple_plots
-from Method_ExperienceValue import Attribute_Window
+from app.Pyside6Functions import center_window, show_multiple_plots
+from methods.Method_ExperienceValue import Attribute_Window
 
 
 class PCA_worker(QThread):

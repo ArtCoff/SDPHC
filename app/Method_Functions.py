@@ -1,7 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from PredefinedData import MIM_indicators, Drawing_specifications
+from app.PredefinedData import MIM_indicators, Drawing_specifications
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure

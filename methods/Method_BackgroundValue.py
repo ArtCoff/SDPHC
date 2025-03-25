@@ -19,24 +19,24 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGridLayout,
 )
-from Method_Functions import (
+from app.Method_Functions import (
     read_file_columns,
     point_dataset_preprocess,
     process_background_value_method,
     calculate_backgroundValue,
 )
-from PredefinedData import Software_info, MIM_indicators
-from CustomControl import (
+from app.PredefinedData import Software_info, MIM_indicators
+from app.CustomControl import (
     background_value_input_doublespinbox,
     WrapButton,
     bottom_buttons,
     LoadingWindow,
     PlotWindow,
 )
-from Pyside6Functions import center_window, traverse_layout, show_multiple_plots
-from Method_ExperienceValue import Attribute_Window
+from app.Pyside6Functions import center_window, traverse_layout, show_multiple_plots
+from methods.Method_ExperienceValue import Attribute_Window
 
-from Auto_report_EN import auto_report_EN as auto_report
+from app.Auto_report_EN import auto_report_EN as auto_report
 
 
 class backgroundValue_worker(QThread):
@@ -99,7 +99,7 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
         import json
 
         all_indicators = set()
-        with open("./static/Monitoring_pollution.json", "r", encoding="utf-8") as f:
+        with open("./resources/Monitoring_pollution.json", "r", encoding="utf-8") as f:
             data = json.load(f)
 
         for key, value in data.items():
@@ -405,7 +405,7 @@ class function_win(QWidget):
                 )
 
     def plot_data(self):
-        from Pyside6Functions import show_multiple_plots
+        from app.Pyside6Functions import show_multiple_plots
 
         figs = []
         for indicator, fig in self.result_dict.get("anomaly_figs"):

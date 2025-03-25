@@ -14,18 +14,18 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGridLayout,
 )
-from Method_Functions import (
+from app.Method_Functions import (
     plot_basic_info,
     read_file_columns,
     calculate_ExperienceValueMethod_scores,
 )
-from PredefinedData import (
+from app.PredefinedData import (
     Software_info,
     MIM_indicators,
     Methods,
     Secondary_Functions_of_ExperienceValue,
 )
-from CustomControl import (
+from app.CustomControl import (
     next_btn,
     help_btn,
     CustomComboBox,
@@ -35,7 +35,7 @@ from CustomControl import (
     bottom_buttons,
     LoadingWindow,
 )
-from Pyside6Functions import center_window, show_multiple_plots
+from app.Pyside6Functions import center_window, show_multiple_plots
 
 
 class worker(QThread):
@@ -140,9 +140,7 @@ class Attribute_Window(QWidget):
         fig = plot_basic_info(
             point_dataset=self.point_dataset, outline_dataset=self.outline_dataset
         )
-        # self.plot_window = PlotWindow(fig)
-        self.plot_window = show_multiple_plots(fig)
-        self.plot_window.show()
+        show_multiple_plots(fig)
 
     def get_combos_content(self):
         combo1_content = lambda: (
@@ -274,7 +272,7 @@ class Contamination_identification_win(QWidget):
         show_multiple_plots(self.result_dict.get("pollution_level_fig"))
 
     def auto_report(self):
-        from Auto_report_EN import auto_report_EN as Auto_report
+        from app.Auto_report_EN import auto_report_EN as Auto_report
 
         doc = Auto_report()
         file_path, _ = QFileDialog.getSaveFileName(

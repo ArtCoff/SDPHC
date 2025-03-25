@@ -10,9 +10,9 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QFormLayout,
 )
-from PredefinedData import Software_info, Methods
-from Pyside6Functions import center_window
-from CustomControl import (
+from app.PredefinedData import Software_info, Methods
+from app.Pyside6Functions import center_window
+from app.CustomControl import (
     file_line_edit,
     next_btn,
     help_btn,
@@ -20,9 +20,9 @@ from CustomControl import (
     LanguageSwitcher,
     bottom_buttons,
 )
-from Method_ExperienceValue import Attribute_Window
-from Method_BackgroundValue import Attribute_Window_BackgroundValue
-from Method_PCA import Attribute_Window_PCA
+from methods.Method_ExperienceValue import Attribute_Window
+from methods.Method_BackgroundValue import Attribute_Window_BackgroundValue
+from methods.Method_PCA import Attribute_Window_PCA
 
 
 class Start_Window(QWidget):
@@ -53,8 +53,8 @@ class Start_Window(QWidget):
         self.current_method_status = Methods.Experience_value_method
         self.method.current_method.connect(self.update_method)
         #!
-        self.outline_dataset.setText(r"C:\Users\Apple\Desktop\MIM\boundary.gpkg")
-        self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\Lanxing.gpkg")
+        self.outline_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\boundary.gpkg")
+        self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\Lanxing.gpkg")
 
         #!
 

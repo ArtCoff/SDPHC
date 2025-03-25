@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QProgressBar,
 )
-from PredefinedData import Methods
+from app.PredefinedData import Methods
 from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (
 )
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from Pyside6Functions import center_window
+from app.Pyside6Functions import center_window
 
 
 class file_line_edit(QLineEdit):

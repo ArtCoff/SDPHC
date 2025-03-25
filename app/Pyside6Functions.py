@@ -54,7 +54,7 @@ def show_multiple_plots(figs):
     :param figs: list[Figure]
     """
     from matplotlib.figure import Figure
-    from CustomControl import PlotWindow
+    from app.CustomControl import PlotWindow
 
     if isinstance(figs, Figure):
         figs = [figs]
