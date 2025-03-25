@@ -297,7 +297,7 @@ class Interpolation_method_selection(QWidget):
 
     def initUI(self):
         self.layout = QHBoxLayout()
-        self.label = QLabel("Interpolation method:")
+        self.label = QLabel(self.tr("Interpolation method:"))
 
         self.combobox = QComboBox()
         self.combobox.addItems(

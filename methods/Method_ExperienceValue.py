@@ -176,9 +176,8 @@ class Contamination_identification_win(QWidget):
         self.setWindowTitle(Software_info.software_name.value)
         self.resize(600, 300)
         self.setMinimumSize(400, 200)
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setWindowIcon(AppStyle.icon())
 
-        self.exit_btn = QPushButton(self.tr("Quit"))
         self.function1_btn = WrapButton_EN(
             self.tr("Pollution exceedance points (except radon gas)")
         )
@@ -190,7 +189,6 @@ class Contamination_identification_win(QWidget):
         self.auto_report_btn = WrapButton_EN(self.tr("Auto report"))
 
         # 功能连接
-        self.exit_btn.clicked.connect(self.close)
         self.function1_btn.clicked.connect(self.function_PCP)
         self.function2_btn.clicked.connect(self.function_PSA)
         self.function4_btn.clicked.connect(self.function_SOC)
@@ -204,13 +202,6 @@ class Contamination_identification_win(QWidget):
         btn_layout.addWidget(self.function5_btn)
         btn_layout.addWidget(self.auto_report_btn)
 
-        ###
-        # h4_layout = QHBoxLayout()
-        # v_layout = QVBoxLayout()
-        # h4_layout.addWidget(self.exit_btn)
-        # v_layout.addLayout(btn_layout)
-        # v_layout.addLayout(h4_layout)
-        #
         self.setLayout(btn_layout)
         center_window(self)
 

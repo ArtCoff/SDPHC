@@ -3,9 +3,13 @@ import geopandas as gpd
 import numpy as np
 from app.PredefinedData import MIM_indicators, Drawing_specifications
 import numpy as np
+import matplotlib
+
+matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+# matplotlib.use("TkAgg")
 
 
 # 添加指北针 (North Arrow)
@@ -1489,7 +1493,7 @@ def plot_PC1_score(
     cmap="viridis",
     # cmap="plasma",
     figsize=(10, 8),
-    dpi=300,
+    dpi=150,
     fontsize=12,
     labelpad=15,
 ) -> Figure:
@@ -1506,7 +1510,6 @@ def plot_PC1_score(
             "font.family": "Times New Roman",
             "font.size": fontsize,
             "axes.linewidth": 0.8,
-            "axes.labelweight": "bold",
             "savefig.dpi": dpi,
             "figure.facecolor": "white",
         }
@@ -1518,7 +1521,7 @@ def plot_PC1_score(
     cax = divider.append_axes("right", size="5%", pad=0.2)
 
     # 绘制点图
-    points = points_gdf.plot(
+    points_gdf.plot(
         ax=ax,
         column=column,
         cmap=cmap,
@@ -1582,7 +1585,6 @@ def plot_PC1_interpolation(
         ax.set_title("Cubic Interpolation")
 
     elif interpolation_method == "IDW":
-        # 假设已实现IDW插值
         grid_z = idw_interpolation(x, y, z, grid_x, grid_y, power=2)
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
 
@@ -1591,7 +1593,6 @@ def plot_PC1_interpolation(
         ax.set_title("Inverse Distance Weighting Interpolation")
 
     elif interpolation_method == "Kriging":
-        # 假设已实现克里金插值
         # grid_z = kriging_interpolation(x, y, z, grid_x, grid_y)
         grid_z = kriging_interpolation(
             x,

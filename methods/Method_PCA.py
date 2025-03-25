@@ -1,7 +1,8 @@
-from PySide6.QtGui import QFont, QIcon
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThread, Slot
+from PySide6.QtCore import Signal, QThread, Slot, Qt
+
 from PySide6.QtWidgets import (
     QMessageBox,
+    QSplitter,
     QWidget,
     QFileDialog,
     QPushButton,
@@ -14,14 +15,13 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 from app.PredefinedData import Software_info
 from app.CustomControl import (
-    next_btn,
     help_btn,
     check_btn,
     Interpolation_method_selection,
     LoadingWindow,
-    bottom_buttons,
+    WrapButton_EN,
 )
-from app.Pyside6Functions import center_window, show_multiple_plots
+from app.Pyside6Functions import center_window, show_multiple_plots, AppStyle
 from app.Method_Functions import return_PCA_results
 from methods.Method_ExperienceValue import Attribute_Window
 
@@ -75,107 +75,46 @@ class Attribute_Window_PCA(Attribute_Window):
         if self.loading_window:
             self.loading_window.close()
             self.loading_window = None
-        self.PCA_win = PC1_Interpolation(result_dict=result_dict)
+        self.PCA_win = PCA_function_win(result_dict=result_dict)
         self.PCA_win.show()
         self.close()
 
 
-class PC1_Interpolation(QWidget):
+class PCA_function_win(QWidget):
+
     def __init__(self, result_dict):
         super().__init__()
         self.result_dict = result_dict
-        self.current_canvas = None  # 右侧动态画布
-        self.fixed_canvas = None  # 新增左侧固定画布
         self.initUI()
 
     def initUI(self):
-        # 主布局（垂直布局）
-        main_layout = QVBoxLayout()
-        main_layout.setSpacing(5)
-        main_layout.setContentsMargins(5, 5, 5, 5)
+        self.setWindowTitle(Software_info.software_name.value)
+        self.resize(600, 300)
+        self.setMinimumSize(400, 200)
+        self.setWindowIcon(AppStyle.icon())
 
-        # 顶部双画布容器
-        top_layout = QHBoxLayout()
-        top_layout.setSpacing(10)
+        self.analysis_btn = WrapButton_EN(self.tr("View graph of PCA analysis results"))
+        self.point_btn = WrapButton_EN(self.tr("View PC1 point distribution"))
+        self.interpolation_btn = WrapButton_EN(
+            self.tr("View PC1 interpolation results")
+        )
+        self.export_btn = WrapButton_EN(
+            self.tr("Export vector results (including principal component scores)")
+        )
 
-        # 左侧固定画布（从result_dict获取）
-        if "PC1_score_fig" in self.result_dict:  # 假设固定fig的键为reference_fig
-            self.fixed_canvas = FigureCanvas(self.result_dict["PC1_score_fig"])
-            self.fixed_canvas.setFixedSize(300, 300)  # 固定尺寸
-            self.fixed_canvas.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            top_layout.addWidget(self.fixed_canvas)
-
-        # 右侧动态画布区域（原有逻辑）
-        self.dynamic_container = QWidget()
-        self.dynamic_layout = QVBoxLayout()
-        self.dynamic_container.setLayout(self.dynamic_layout)
-        self.create_initial_plot()  # 原有初始化
-        top_layout.addWidget(self.dynamic_container)
-
-        # 底部功能区
-        bottom_layout = QVBoxLayout()
-        bottom_layout.setSpacing(5)
-
-        # 第一行：插值方法选择器（左对齐）
-        method_layout = QHBoxLayout()
-        self.interpolation_method = Interpolation_method_selection()
-        method_layout.addWidget(self.interpolation_method)
-        method_layout.addStretch()  # 推动控件左对齐
-        bottom_layout.addLayout(method_layout)
-
-        # 第二行：功能按钮（保持原有布局）
-        button_layout = QHBoxLayout()
-        self.show_PCA_btn = QPushButton("Show PCA Analysis")
-        self.export_btn = QPushButton("Export GDF")  # 新增导出按钮
-        self.help_btn = help_btn()
-        self.close_btn = check_btn()
-
-        button_layout.addWidget(self.export_btn)
-        button_layout.addWidget(self.show_PCA_btn)
-        button_layout.addStretch()
-        button_layout.addWidget(self.help_btn)
-        button_layout.addWidget(self.close_btn)
-        bottom_layout.addLayout(button_layout)
-
-        # 组合总布局
-        main_layout.addLayout(top_layout)
-        main_layout.addLayout(bottom_layout)
-        self.setLayout(main_layout)
-
-        # 信号连接（新增导出功能）
+        # 功能连接
+        self.analysis_btn.clicked.connect(self.display_PCA_plots)
+        self.point_btn.clicked.connect(self.display_PC1_point_distribution)
+        self.interpolation_btn.clicked.connect(self.display_PC1_interpolation)
         self.export_btn.clicked.connect(self.export_gdf)
-        self.interpolation_method.Interpolation_method.connect(self.update_plot)
-        self.show_PCA_btn.clicked.connect(self.display_PCA_plots)
-        self.help_btn.clicked.connect(self.show_help)
-        self.close_btn.clicked.connect(self.close)
-
-        # 窗口属性
-        self.setWindowTitle("PC1 Interpolation Plot")
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        self.setMinimumSize(900, 600)  # 扩展窗口大小
+        # Layout
+        btn_layout = QVBoxLayout()
+        btn_layout.addWidget(self.analysis_btn)
+        btn_layout.addWidget(self.point_btn)
+        btn_layout.addWidget(self.interpolation_btn)
+        btn_layout.addWidget(self.export_btn)
+        self.setLayout(btn_layout)
         center_window(self)
-
-    # 原有方法保持不变
-    def create_initial_plot(self):
-        if self.current_canvas:
-            self.dynamic_layout.removeWidget(self.current_canvas)
-            self.current_canvas.deleteLater()
-
-        fig = self.result_dict["PC1_interpolation_figs"]["Nearest"]
-        self.current_canvas = FigureCanvas(fig)
-        self.toolbar = NavigationToolbar(self.current_canvas, self)
-
-        self.dynamic_layout.addWidget(self.toolbar)
-        self.dynamic_layout.addWidget(self.current_canvas)
-
-    def update_plot(self, method):
-        try:
-            fig = self.result_dict["PC1_interpolation_figs"][method]
-            self.current_canvas.figure = fig
-            self.current_canvas.draw()
-            self.toolbar.update()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
 
     def display_PCA_plots(self):
         figs = [
@@ -185,7 +124,20 @@ class PC1_Interpolation(QWidget):
         ]
         show_multiple_plots(figs)
 
-    # 新增导出功能
+    def display_PC1_point_distribution(self):
+        show_multiple_plots([self.result_dict["PC1_score_fig"]])
+
+    def display_PC1_interpolation(self):
+        # interpolation_methods = ["Nearest", "Cubic", "IDW", "Kriging"]
+        # figs = [
+        #     fig
+        #     for method, fig in self.result_dict["PC1_interpolation_figs"].items()
+        #     if method in interpolation_methods
+        # ]
+        # show_multiple_plots(figs)
+        self.PC1_interpolation_win = PC1_Interpolation(self.result_dict)
+        self.PC1_interpolation_win.show()
+
     def export_gdf(self):
         try:
             gdf = self.result_dict.get("gdf")
@@ -205,10 +157,69 @@ class PC1_Interpolation(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Export Failed", str(e))
 
-    def show_help(self):
-        QMessageBox.information(
-            self,
-            self.tr("Help"),
-            self.tr("PC1 interpolation plot: The interpolation plot of PC1 scores."),
-            QMessageBox.Ok,
-        )
+
+class PC1_Interpolation(QWidget):
+    def __init__(self, result_dict):
+        super().__init__()
+        self.result_dict = result_dict
+        self.current_canvas = None
+        self.initUI()
+
+    def initUI(self):
+        # 主布局（垂直布局）
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setSpacing(5)
+        self.main_layout.setContentsMargins(5, 5, 5, 5)
+        self.dynamic_layout = QVBoxLayout()
+        self.create_initial_plot()  # 原有初始化
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addStretch(1)
+
+        self.interpolation_method = Interpolation_method_selection()
+        bottom_layout.addWidget(self.interpolation_method)
+        self.main_layout.addLayout(self.dynamic_layout)
+        self.main_layout.addLayout(bottom_layout)
+        self.setLayout(self.main_layout)
+
+        self.interpolation_method.Interpolation_method.connect(self.update_plot)
+
+        # 窗口属性
+        self.setWindowTitle("PC1 Interpolation Plot")
+        self.setWindowIcon(AppStyle.icon())
+        self.resize(800, 600)  # 设置窗口大小
+        center_window(self)
+
+    def update_canvas(self, method):
+        """根据方法名更新画布和工具栏"""
+        try:
+            fig = self.result_dict["PC1_interpolation_figs"][method]
+
+            # 清理旧组件
+            if self.current_canvas:
+                self.dynamic_layout.removeWidget(self.current_canvas)
+                self.current_canvas.deleteLater()
+            if hasattr(self, "toolbar"):
+                self.dynamic_layout.removeWidget(self.toolbar)
+                self.toolbar.deleteLater()
+
+            # 创建新组件
+            self.current_canvas = FigureCanvas(fig)
+            self.toolbar = NavigationToolbar(self.current_canvas, self)
+
+            # 添加到布局
+            self.dynamic_layout.addWidget(self.toolbar)
+            self.dynamic_layout.addWidget(self.current_canvas)
+
+        except KeyError:
+            raise ValueError(f"Method '{method}' not found in results")
+        except Exception as e:
+            raise RuntimeError(f"Failed to update plot: {str(e)}")
+
+    def create_initial_plot(self):
+        self.update_canvas("Nearest")
+
+    def update_plot(self, method):
+        try:
+            self.update_canvas(method)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
