@@ -191,6 +191,7 @@ class Contamination_identification_win(QWidget):
         )
         self.function4_btn = WrapButton_EN(self.tr("Scope of contamination"))
         self.function5_btn = WrapButton_EN(self.tr("Pollution level identification"))
+        self.auto_report_btn = WrapButton_EN(self.tr("Auto report"))
 
         # 功能连接
         self.exit_btn.clicked.connect(self.close)
@@ -198,12 +199,14 @@ class Contamination_identification_win(QWidget):
         self.function2_btn.clicked.connect(self.function_PSA)
         self.function4_btn.clicked.connect(self.function_SOC)
         self.function5_btn.clicked.connect(self.function_PLI)
+        self.auto_report_btn.clicked.connect(self.auto_report)
         # Layout
         btn_layout = QVBoxLayout()
         btn_layout.addWidget(self.function1_btn)
         btn_layout.addWidget(self.function2_btn)
         btn_layout.addWidget(self.function4_btn)
         btn_layout.addWidget(self.function5_btn)
+        btn_layout.addWidget(self.auto_report_btn)
 
         ###
         # h4_layout = QHBoxLayout()
@@ -269,6 +272,29 @@ class Contamination_identification_win(QWidget):
 
     def function_PLI(self):
         show_multiple_plots(self.result_dict.get("pollution_level_fig"))
+
+    def auto_report(self):
+        from Auto_report_EN import auto_report_EN as Auto_report
+
+        doc = Auto_report()
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export report",
+            "",
+            "Reporting documents (*.docx)",
+        )
+        if file_path:
+            try:
+                doc.save(file_path)
+                QMessageBox.information(
+                    self,
+                    "succeed",
+                    "The report has been saved locally and can be opened using WPS or Word!",
+                )
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "failed", f"The report failed to be saved due to:{str(e)}"
+                )
 
 
 class function_win(QWidget):

@@ -36,7 +36,7 @@ from CustomControl import (
 from Pyside6Functions import center_window, traverse_layout, show_multiple_plots
 from Method_ExperienceValue import Attribute_Window
 
-from auto_report_CN import auto_report
+from Auto_report_EN import auto_report_EN as auto_report
 
 
 class backgroundValue_worker(QThread):
@@ -224,7 +224,7 @@ class background_value_input_manual(QWidget):
     def initUI(self):
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setWindowTitle(self.tr("Background value manual input"))
-        self.setGeometry(100, 100, 600, 300)
+        self.resize(600, 400)
         self.setMinimumSize(500, 300)
 
         self.radon_background_value = indicator_background_value_input(
@@ -414,26 +414,26 @@ class function_win(QWidget):
         show_multiple_plots(figs)
 
     def auto_report(self):
-        import docx
-
         doc = auto_report(
             self.gdf, background_file=None, final_boundarys=self.final_boundarys
         )
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "导出报告",
+            "Export report",
             "",
-            "报告文件 (*.docx)",
+            "Reporting documents (*.docx)",
         )
         if file_path:
             try:
                 doc.save(file_path)
                 QMessageBox.information(
-                    self, "成功", "报告已经保存至本地，可以使用WPS或Word打开!"
+                    self,
+                    "succeed",
+                    "The report has been saved locally and can be opened using WPS or Word!",
                 )
             except Exception as e:
                 QMessageBox.critical(
-                    self, "错误！", f"报告保存失败，失败原因为: {str(e)}"
+                    self, "failed", f"The report failed to be saved due to:{str(e)}"
                 )
 
 

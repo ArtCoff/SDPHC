@@ -183,7 +183,6 @@ if __name__ == "__main__":
     os.environ["QT_SCALE_FACTOR"] = qt_scale_factor
     app = QApplication(sys.argv)
     # app.setStyle("Windows")
-    app.setStyle("fusion")
 
     # 正确获取主屏幕
     font_family = settings.get("FONT_FAMILY", "Arial")
