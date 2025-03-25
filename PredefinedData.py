@@ -42,7 +42,11 @@ class indicator:
 
 
 class MIM_indicators(Enum):
-    Radon = indicator(name="Radon", chinese_name="氡气", unit="Bq/m³")
+    Radon = indicator(
+        name="Radon",
+        chinese_name="氡气",
+        unit="Bq/m³",
+    )
     VOCs = indicator(name="VOCs", chinese_name="挥发性有机物", unit="ppb")
     CO2 = indicator(
         name="CO2", chinese_name="二氧化碳", unit="ppm", label="CO<sub>2</sub>"

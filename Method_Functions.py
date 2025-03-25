@@ -624,7 +624,7 @@ def draw_ECDF(
     ax = fig.add_subplot(111)
 
     sorted_data, cum_prob = compute_ecdf(data)
-    ax.step(sorted_data, cum_prob, where="post", label="ECDF")
+    ax.step(sorted_data, cum_prob, where="post")
     ax.scatter(sorted_data, cum_prob, s=2, color="red", zorder=2, label="Points")
     ax.set_xlabel(f"{param_name} ({unit})" if unit else param_name)
     ax.set_ylabel("ECDF")
@@ -720,21 +720,21 @@ def process_background_value_method(gdf):
         print(f"Processing {col.value.name}...")
         unit = col.value.unit
         # 处理数据
-        data = gdf[col.value.name].dropna().values.reshape(-1, 1)
+        data = gdf[col.value.name].dropna().values  # .reshape(-1, 1)
         if data.size == 0:
             results[col] = BackgroundResult()
             continue
 
         # 生成图表
         try:
-            ecdf_fig = draw_ECDF(data, param_name=col, unit=unit)
+            ecdf_fig = draw_ECDF(data, param_name=col.value.name, unit=unit)
         except Exception as e:
             ecdf_fig = None
             print(f"ECDF生成失败({col}): {str(e)}")
 
         try:
             kmeans_boundary, kmeans_fig = draw_KMeans_cluster(
-                data, param_name=col, unit=unit
+                data, param_name=col.value.name, unit=unit
             )
         except Exception as e:
             kmeans_boundary = None
@@ -836,7 +836,7 @@ def calculate_backgroundValue(data, boundarys):
                 backgroundValue_anomaly_fig(
                     gdf=gdf,
                     column=column,
-                    label=indicator.value.label,
+                    label=indicator.value.name,
                     boundary_polygon_file=new_data.get("outline_dataset"),
                 ),
             ),
@@ -954,7 +954,14 @@ def backgroundValue_anomaly_fig(
     all_null = (gdf["color"] == "white").all()
     if all_null:
         return None
-    ax.scatter(gdf.geometry.x, gdf.geometry.y, marker="o", s=30, color=gdf["color"])
+    mask = gdf["color"] != "white"
+    ax.scatter(
+        gdf[mask].geometry.x,
+        gdf[mask].geometry.y,
+        marker="o",
+        s=30,
+        color=gdf[mask]["color"],
+    )
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
     ax.set_xlabel("X")
@@ -1027,7 +1034,7 @@ def backgroundValue_anomaly_fig______(gdf, boundary_polygon_file=None, save=Fals
                 [0],
                 marker="o",
                 color="w",
-                label="污染源",
+                label="Source Area",
                 markerfacecolor="red",
                 markersize=10,
             )
@@ -1039,7 +1046,7 @@ def backgroundValue_anomaly_fig______(gdf, boundary_polygon_file=None, save=Fals
                 [0],
                 marker="o",
                 color="w",
-                label="污染羽",
+                label="Plume",
                 markerfacecolor="orange",
                 markersize=10,
             )
@@ -1051,7 +1058,7 @@ def backgroundValue_anomaly_fig______(gdf, boundary_polygon_file=None, save=Fals
                 [0],
                 marker="o",
                 color="w",
-                label="正常",
+                label="Normal point",
                 markerfacecolor="green",
                 markersize=10,
             )

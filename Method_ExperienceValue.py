@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
 from Method_Functions import (
     plot_basic_info,
     read_file_columns,
-    point_dataset_preprocess,
     calculate_ExperienceValueMethod_scores,
 )
 from PredefinedData import (
@@ -33,7 +32,6 @@ from CustomControl import (
     # WrapButton,
     WrapButton_EN,
     GeoDataFrameModel,
-    PlotWindow,
     bottom_buttons,
     LoadingWindow,
 )
@@ -51,7 +49,6 @@ class worker(QThread):
         self.outline_dataset = outline_dataset
 
     def run(self):
-        # gdf = point_dataset_preprocess(self.point_dataset, self.options)
         result_dict = calculate_ExperienceValueMethod_scores(
             self.point_dataset, self.options, self.outline_dataset
         )
@@ -71,7 +68,7 @@ class Attribute_Window(QWidget):
 
     def initUI(self, options):
         self.setWindowTitle(Software_info.software_name.value)
-        self.setGeometry(100, 100, 400, 600)
+        self.resize(600, 400)
         self.setMinimumSize(400, 300)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.plot_dataset_info_btn = QPushButton(
@@ -181,9 +178,10 @@ class Contamination_identification_win(QWidget):
 
     def initUI(self):
         self.setWindowTitle(Software_info.software_name.value)
-        self.setGeometry(100, 100, 400, 200)
+        self.resize(600, 300)
+        self.setMinimumSize(400, 200)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
-        center_window(self)
+
         self.exit_btn = QPushButton(self.tr("Quit"))
         self.function1_btn = WrapButton_EN(
             self.tr("Pollution exceedance points (except radon gas)")
@@ -208,12 +206,14 @@ class Contamination_identification_win(QWidget):
         btn_layout.addWidget(self.function5_btn)
 
         ###
-        h4_layout = QHBoxLayout()
-        v_layout = QVBoxLayout()
-        h4_layout.addWidget(self.exit_btn)
-        v_layout.addLayout(btn_layout)
-        v_layout.addLayout(h4_layout)
-        self.setLayout(v_layout)
+        # h4_layout = QHBoxLayout()
+        # v_layout = QVBoxLayout()
+        # h4_layout.addWidget(self.exit_btn)
+        # v_layout.addLayout(btn_layout)
+        # v_layout.addLayout(h4_layout)
+        #
+        self.setLayout(btn_layout)
+        center_window(self)
 
     def function_PCP(self):
         display_gdf = self.result_gdf[self.result_gdf["The_other_soil_gas_scores"] >= 6]
@@ -248,8 +248,6 @@ class Contamination_identification_win(QWidget):
                 "Radon_Score",
                 "All_indicators_Scores",
             ],
-            # ["点位编号", "其他土壤气得分", "氡气赋分", "所有指标得分"],
-            # all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_PSA,
         )
@@ -264,8 +262,6 @@ class Contamination_identification_win(QWidget):
                 "The_other_soil_gas_scores",
                 "Scope_of_contamination",
             ],
-            # columns_to_display=["点位编号", "其他土壤气得分", "得分≥1"],
-            # all_gdf=self.result_gdf,
             outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_SOC,
         )
@@ -302,6 +298,7 @@ class function_win(QWidget):
         # 调整窗口大小以适应表格内容
         self.adjustSize()
         self.resize(800, 600)
+        self.setMinimumSize(800, 600)
         # 创建导出按钮
         self.export_button = QPushButton(self.tr("Export to Excel"))
         self.export_button.clicked.connect(self.export_to_excel)

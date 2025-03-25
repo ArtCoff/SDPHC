@@ -33,7 +33,7 @@ from CustomControl import (
     LoadingWindow,
     PlotWindow,
 )
-from Pyside6Functions import center_window, traverse_layout
+from Pyside6Functions import center_window, traverse_layout, show_multiple_plots
 from Method_ExperienceValue import Attribute_Window
 
 from auto_report_CN import auto_report
@@ -187,17 +187,15 @@ class indicator_background_value_input(QWidget):
         fig = self.result.kmeans_fig
         if fig is None:
             return QMessageBox.warning(self, "Warning", "No data available")
-        self.kemans_window = PlotWindow(fig)
+        self.kemans_window = show_multiple_plots(fig)
         self.kemans_window.show()
-        self.kemans_window.exec()
 
     def plot_ECDF(self):
         fig = self.result.ecdf_fig
         if fig is None:
             return QMessageBox.warning(self, "Warning", "No data available")
-        self.ecdf_window = PlotWindow(fig)
+        self.ecdf_window = show_multiple_plots(fig)
         self.ecdf_window.show()
-        self.ecdf_window.exec()
 
     def set_value(self):
         if self.status:
@@ -228,17 +226,7 @@ class background_value_input_manual(QWidget):
         self.setWindowTitle(self.tr("Background value manual input"))
         self.setGeometry(100, 100, 600, 300)
         self.setMinimumSize(500, 300)
-        # for row_idx, (label, spinbox, unit, kmeans_btn, ecdf_btn) in enumerate(rows):
-        #     # 设置标签右对齐
-        #     lbl = QLabel(label)
-        #     lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        #     # 添加行内容
-        #     Gridlayout.addWidget(lbl, row_idx, 0)
-        #     Gridlayout.addWidget(spinbox, row_idx, 1)
-        #     Gridlayout.addWidget(unit, row_idx, 2)
-        #     Gridlayout.addWidget(kmeans_btn, row_idx, 3)
-        #     Gridlayout.addWidget(ecdf_btn, row_idx, 4)
         self.radon_background_value = indicator_background_value_input(
             MIM_indicators.Radon, self.result_dict, value_range=999999
         )
@@ -277,23 +265,6 @@ class background_value_input_manual(QWidget):
         main_layout.addWidget(self.bottom_buttons)
         self.setLayout(main_layout)
         center_window(self)
-
-    # def plot_kemans_boundary(self, indicator):
-    #     print(self.result_dict.keys())
-    #     # 确保结果存在
-    #     if indicator not in self.result_dict:
-    #         return QMessageBox.warning(self, "Warning", "未找到该指标的分析结果")
-    #     fig = self.result_dict[indicator].kmeans_fig
-    #     self.plot_window = PlotWindow(fig)
-    #     self.plot_window.show()
-
-    # def plot_ECDF(self, indicator):
-    #     if indicator not in self.result_dict:
-    #         return QMessageBox.warning(self, "Warning", "未找到该指标的分析结果")
-    #     fig = self.result_dict[indicator].ecdf_fig
-    #     plot_window = PlotWindow(fig)
-    #     plot_window.show()
-    #     plot_window.exec()
 
     def get_boundaries(self, widget):
         if isinstance(widget, indicator_background_value_input):

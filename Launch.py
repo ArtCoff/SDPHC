@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
 )
 from PredefinedData import Software_info, Methods
-from Pyside6Functions import center_window, title_font
+from Pyside6Functions import center_window
 from CustomControl import (
     file_line_edit,
     next_btn,
@@ -42,6 +42,7 @@ class Start_Window(QWidget):
         # self.load_translation(self.current_language)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setWindowTitle(self.tr(Software_info.software_name.value))
+        self.resize(600, 400)
         self.setMinimumSize(400, 300)
         self.language_switcher = LanguageSwitcher()
         # self.language_switcher.language_changed.connect(self.update_language)

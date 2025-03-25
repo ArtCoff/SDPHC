@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
 )
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from Pyside6Functions import center_window
 
 
 class file_line_edit(QLineEdit):
@@ -373,7 +374,7 @@ class LoadingWindow(QWidget):
         self.setWindowFlag(Qt.WindowStaysOnTopHint)  # 置顶显示
         self.setWindowFlag(Qt.FramelessWindowHint)  # 无边框
         self.setWindowModality(Qt.ApplicationModal)  # 模态窗口
-        self.setFixedSize(400, 300)
+        self.resize(300, 100)
         title_bar = QWidget()
         title_bar_layout = QHBoxLayout()
         title_bar_layout.setContentsMargins(0, 0, 0, 0)
@@ -397,6 +398,7 @@ class LoadingWindow(QWidget):
         layout.addWidget(self.label)
         layout.addWidget(self.progress)
         self.setLayout(layout)
+        center_window(self)
 
         self.draggable = True
         self.drag_position = QPoint()
@@ -420,7 +422,7 @@ class LoadingWindow(QWidget):
 class PlotWindow(QWidget):
     def __init__(self, fig):
         super().__init__()
-        self.setWindowTitle("Geospatial Data Visualization")
+        self.setWindowTitle("Data Visualization")
         self.setGeometry(100, 100, 400, 300)
         self.setWindowIcon(QIcon(r"./static/icon.ico"))
         self.setMinimumSize(400, 300)
