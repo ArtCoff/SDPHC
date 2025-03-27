@@ -1,13 +1,14 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from app.PredefinedData import MIM_indicators, Drawing_specifications
+
 import numpy as np
 import matplotlib
 
 matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from app.PredefinedData import MIM_indicators, Drawing_specifications
 
 # matplotlib.use("TkAgg")
 
@@ -100,35 +101,43 @@ def read_file_columns(datapoints_shp):
 Radon_score = {
     "breakpoint": [(15, True), (150, True), (1500, True)],
     "score": [11, 3, 1, 0],
-}
+}  # unit:Bq/m3
 VOCs_score = {
     "breakpoint": [(0.1, False), (1, False), (10, False), (100, False)],
     "score": [0, 1, 2, 6, 22],
-}
+}  # unit:ppm
 CO2_score = {
     "breakpoint": [(0.01, False), (0.05, False), (0.1, False)],
     "score": [0, 2, 6, 22],
-}
+}  # unit:%
 O2_score = {
     "breakpoint": [(0.01, True), (0.1, True), (0.19, True)],
     "score": [11, 3, 1, 0],
-}
+}  # unit:%
 CH4_score = {
     "breakpoint": [(0.0001, False), (0.0025, False), (0.01, False), (0.05, False)],
     "score": [0, 1, 2, 6, 22],
-}
+}  # unit:%
 H2_score = {
     "breakpoint": [(100, False), (500, False), (1000, False)],
     "score": [0, 1, 3, 11],
-}
+}  # unit:ppm
 H2S_score = {
     "breakpoint": [(1, False), (5, False), (10, False)],
     "score": [0, 1, 3, 11],
-}
+}  # unit:ppm
 abnormal_score_config = dict(
     zip(
         [indicator.value.name for indicator in MIM_indicators],
-        [Radon_score, VOCs_score, CO2_score, O2_score, CH4_score, H2_score, H2S_score],
+        [
+            Radon_score,
+            VOCs_score,
+            CO2_score,
+            O2_score,
+            CH4_score,
+            H2S_score,
+            H2_score,
+        ],
     )
 )
 
@@ -198,7 +207,6 @@ def point_dataset_preprocess(point_dataset, options):
 
     # 读取数据
     gdf = gpd.read_file(point_dataset).to_crs(epsg=Drawing_specifications.EPSG_code)
-    # gdf["Point_ID"] = gdf[options.get("Point_ID")]
     # Key的类型为枚举类型，无法直接使用
     for key, value in options.items():
         if value in gdf.columns:
@@ -216,18 +224,28 @@ def boundary_file_preprocess(boundary_file):
     return boundary_gdf
 
 
+def safe_remove(lst, item):
+    try:
+        lst.remove(item)
+    except ValueError:
+        pass
+    return lst
+
+
 def calculate_ExperienceValueMethod_scores(
     gdf, options, boundary_file, abnormal_score_config: dict = abnormal_score_config
 ):
     gdf = point_dataset_preprocess(gdf, options)
+    boundary_gdf = boundary_file_preprocess(boundary_file)
     # 确定需要处理的指标列
     indicators = list(abnormal_score_config.keys())
+    subset = safe_remove(indicators.copy(), "Radon")
+    gdf = gdf.dropna(subset=subset)
+    # * 数据单位转换(针对测试数据)
+    gdf["VOCs"] = gdf["VOCs"].apply(lambda x: x / 1000)
+    gdf["CO2"] = gdf["CO2"].apply(lambda x: x / 1000000)
 
-    # 验证指标列是否存在
-    for col in indicators:
-        if col not in gdf.columns:
-            raise KeyError(f"KeyError:{col}")
-
+    # *
     # 定义行处理函数
     def process_row(row):
         # 提取当前行的指标数据
@@ -243,22 +261,22 @@ def calculate_ExperienceValueMethod_scores(
 
     result_dict = {}
     result_dict["gdf"] = gdf
-    result_dict["outline_dataset"] = boundary_file
-    fig_dict = experienceValue_anomaly_fig(gdf, boundary_file)
+    result_dict["outline_dataset"] = boundary_gdf
+    fig_dict = experienceValue_anomaly_fig(gdf, boundary_gdf)
     result_dict.update(fig_dict)
     return result_dict
 
 
 def experienceValue_anomaly_fig(
     gdf,
-    boundary_polygon_file,
+    boundary_gdf,
     epsg_code=Drawing_specifications.EPSG_code,
 ):
     result_dict = {}
-    result_dict["source_fig"] = 绘制污染源区图(gdf, boundary_polygon_file, epsg_code)
-    result_dict["scope_fig"] = 绘制污染范围(gdf, boundary_polygon_file, epsg_code)
-    result_dict["exceed_fig"] = 绘制超标点位(gdf, boundary_polygon_file, epsg_code)
-    result_dict["pollution_level_fig"] = 污染等级识别(gdf, boundary_polygon_file)
+    result_dict["source_fig"] = 绘制污染源区图(gdf, boundary_gdf, epsg_code)
+    result_dict["scope_fig"] = 绘制污染范围(gdf, boundary_gdf, epsg_code)
+    result_dict["exceed_fig"] = 绘制超标点位(gdf, boundary_gdf, epsg_code)
+    result_dict["pollution_level_fig"] = 污染等级识别(gdf, boundary_gdf)
     return result_dict
 
 
@@ -278,12 +296,8 @@ def 计算单个污染类型(row):
         return "Scores<6"
 
 
-def 绘制污染源区图(
-    gdf, boundary_polygon_file, epsg_code=Drawing_specifications.EPSG_code
-):
-    import geopandas as gpd
+def 绘制污染源区图(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_code):
     import matplotlib
-    import matplotlib.pyplot as plt
 
     fig = Figure(figsize=(10, 8), dpi=90)
     ax = fig.add_subplot(111)
@@ -296,8 +310,7 @@ def 绘制污染源区图(
         "Scores<6": "green",
     }
     gdf["color"] = gdf["Contamination_type"].map(colors).fillna("gray")
-    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
-    boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
+    boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     gdf = gdf.to_crs(epsg=epsg_code)
     gdf.plot(ax=ax, color=gdf["color"], markersize=30)
     add_north_arrow(ax)
@@ -341,9 +354,7 @@ def 绘制污染源区图(
     return fig
 
 
-def 绘制污染范围(
-    gdf, boundary_polygon_file, epsg_code=Drawing_specifications.EPSG_code
-):
+def 绘制污染范围(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_code):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
@@ -353,10 +364,9 @@ def 绘制污染范围(
     fig = Figure(figsize=(10, 8), dpi=90)
     ax = fig.add_subplot(111)
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
     colors = {1: "orange", 0: "green"}
     gdf["color"] = gdf["Scope_of_contamination"].map(colors)
-    boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
+    boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     ax.scatter(gdf.geometry.x, gdf.geometry.y, marker="^", s=30, color=gdf["color"])
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
@@ -390,9 +400,7 @@ def 绘制污染范围(
     return fig
 
 
-def 绘制超标点位(
-    gdf, boundary_polygon_file, epsg_code=Drawing_specifications.EPSG_code
-):
+def 绘制超标点位(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_code):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
@@ -401,8 +409,7 @@ def 绘制超标点位(
     fig = Figure(figsize=(10, 8), dpi=90)
     ax = fig.add_subplot(111)
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    boundary_polygon_gdf = gpd.read_file(boundary_polygon_file).to_crs(epsg=epsg_code)
-    boundary_polygon_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
+    boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     gdf.plot(
         ax=ax,
         color="red",
@@ -478,16 +485,13 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from shapely.ops import unary_union
-from rasterio import features
-from rasterio.transform import from_origin
 
 
-def 污染等级识别(gdf, boundary_polygon_file, method="linear"):
+def 污染等级识别(gdf, boundary_gdf, method="linear"):
     try:
         # 数据预处理
-        boundary = gpd.read_file(boundary_polygon_file).to_crs(
-            epsg=Drawing_specifications.EPSG_code
-        )
+        gdf.to_csv("gdf.csv")
+        boundary = boundary_gdf.copy()
         if gdf.crs != boundary.crs:
             gdf = gdf.to_crs(boundary.crs)
 
@@ -1613,4 +1617,8 @@ def plot_PC1_interpolation(
 
 
 if __name__ == "__main__":
+    # for key in abnormal_score_config.keys():
+    #     print(key)
+    #     print(abnormal_score_config.get(key))
+    #     print("")
     pass

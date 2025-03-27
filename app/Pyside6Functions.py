@@ -92,7 +92,9 @@ def show_multiple_plots(figs):
     """
     from matplotlib.figure import Figure
     from app.CustomControl import PlotWindow
+    from copy import deepcopy
 
+    figs = deepcopy(figs)
     if isinstance(figs, Figure):
         figs = [figs]
     elif not isinstance(figs, list):
@@ -106,6 +108,11 @@ def show_multiple_plots(figs):
         # 偏移窗口位置避免完全重叠
         if i > 0:
             window.move(window.x() + 30 * i, window.y() + 30 * i)
+        # *
+        window.setAttribute(Qt.WA_DeleteOnClose)  # 确保窗口关闭时自动销毁
+        window.destroyed.connect(
+            lambda obj, w=window: app.windows.remove(w) if w in app.windows else None
+        )
 
         window.show()
         app.windows.append(window)

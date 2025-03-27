@@ -49,14 +49,14 @@ class MIM_indicators(Enum):
     )
     VOCs = indicator(name="VOCs", chinese_name="挥发性有机物", unit="ppb")
     CO2 = indicator(
-        name="CO2", chinese_name="二氧化碳", unit="ppm", label="CO<sub>2</sub>"
+        name="CO2", chinese_name="二氧化碳", unit="%", label="CO<sub>2</sub>"
     )
     O2 = indicator(name="O2", chinese_name="氧气", unit="%", label="O<sub>2</sub>")
     CH4 = indicator(name="CH4", chinese_name="甲烷", unit="%", label="CH<sub>4</sub>")
     H2S = indicator(
-        name="H2S", chinese_name="硫化氢", unit="mg/m3", label="H<sub>2</sub>S"
+        name="H2S", chinese_name="硫化氢", unit="mg/L", label="H<sub>2</sub>S"
     )
-    H2 = indicator(name="H2", chinese_name="氢气", unit="mg/m3", label="H<sub>2</sub>")
+    H2 = indicator(name="H2", chinese_name="氢气", unit="mg/L", label="H<sub>2</sub>")
     FG = indicator(
         name="FG",
         chinese_name="功能基因",

@@ -1,24 +1,17 @@
-import sys
 from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThread, Slot
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
-    QApplication,
     QMessageBox,
     QTableView,
     QLabel,
     QWidget,
-    QComboBox,
     QPushButton,
-    QRadioButton,
-    QDoubleSpinBox,
     QPlainTextEdit,
-    QLineEdit,
     QFileDialog,
     QVBoxLayout,
     QHBoxLayout,
-    QFormLayout,
-    QGridLayout,
 )
+from methods.Method_ExperienceValue import Attribute_Window
 from app.Method_Functions import (
     read_file_columns,
     point_dataset_preprocess,
@@ -28,14 +21,15 @@ from app.Method_Functions import (
 from app.PredefinedData import Software_info, MIM_indicators
 from app.CustomControl import (
     background_value_input_doublespinbox,
-    WrapButton,
     bottom_buttons,
     LoadingWindow,
-    PlotWindow,
 )
-from app.Pyside6Functions import center_window, traverse_layout, show_multiple_plots
-from methods.Method_ExperienceValue import Attribute_Window
-
+from app.Pyside6Functions import (
+    AppStyle,
+    center_window,
+    traverse_layout,
+    show_multiple_plots,
+)
 from app.Auto_report_EN import auto_report_EN as auto_report
 
 
@@ -184,18 +178,18 @@ class indicator_background_value_input(QWidget):
             )
 
     def plot_kemans_boundary(self):
+        # fig = deepcopy(self.result.kmeans_fig)
         fig = self.result.kmeans_fig
         if fig is None:
             return QMessageBox.warning(self, "Warning", "No data available")
-        self.kemans_window = show_multiple_plots(fig)
-        self.kemans_window.show()
+        show_multiple_plots(fig)
 
     def plot_ECDF(self):
+        # fig = deepcopy(self.result.ecdf_fig)
         fig = self.result.ecdf_fig
         if fig is None:
             return QMessageBox.warning(self, "Warning", "No data available")
-        self.ecdf_window = show_multiple_plots(fig)
-        self.ecdf_window.show()
+        show_multiple_plots(fig)
 
     def set_value(self):
         if self.status:
@@ -222,7 +216,7 @@ class background_value_input_manual(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setWindowIcon(AppStyle.icon())
         self.setWindowTitle(self.tr("Background value manual input"))
         self.resize(600, 400)
         self.setMinimumSize(500, 300)
@@ -359,7 +353,8 @@ class function_win(QWidget):
         layout.addWidget(self.plot_button)
         layout.addWidget(self.auto_report_button)
         self.setLayout(layout)
-
+        self.resize(800, 600)
+        self.setWindowIcon(AppStyle.icon())
         self.setWindowTitle("Results")
         center_window(self)
 

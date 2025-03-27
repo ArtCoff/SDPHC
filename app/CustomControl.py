@@ -395,7 +395,7 @@ class PlotWindow(QWidget):
         from app.Pyside6Functions import AppStyle
 
         self.setWindowTitle("Data Visualization")
-        self.setGeometry(100, 100, 400, 300)
+        self.resize(800, 600)
         self.setWindowIcon(AppStyle.icon())
         self.setMinimumSize(400, 300)
 
@@ -403,6 +403,7 @@ class PlotWindow(QWidget):
         self.canvas = None
         self.toolbar = None
         self.fig = fig
+        self.fig.set_size_inches(4, 3)
         # 安全初始化
         if not self.fig:
             QMessageBox.critical(self, "Error", self.tr("Invalid graphic objects"))
@@ -421,3 +422,4 @@ class PlotWindow(QWidget):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
+        center_window(self)
