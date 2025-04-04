@@ -1,26 +1,119 @@
-# from Method_Functions import 绘制点位分布, 绘制污染点位分布V2, 绘制保存异常点位
 from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, Cm, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
+
 from docx.enum.section import WD_SECTION
-from datetime import datetime
 from docx.oxml.ns import qn  # 用于设置中文字体
+
+# 其他库引用
+from datetime import datetime
 from pathlib import Path
 import geopandas as gpd
-from docx.shared import RGBColor
+from PIL import Image
+
+# 内部函数引用
+
+
+# def setup_default_styles(doc):
+#     # ================================
+#     # 设置默认正文样式（Normal）
+#     # ================================
+#     normal_style = doc.styles["Normal"]
+#     # 字体设置
+#     normal_style.font.name = "Times New Roman"  # 西文字体
+#     normal_style.font.size = Pt(12)  # 小四号字
+#     normal_style.font.color.rgb = RGBColor(0, 0, 0)
+#     # 中文字体（需操作底层 XML）
+#     rpr = normal_style.element.get_or_add_rPr()
+#     rpr.get_or_add_rFonts().set(qn("w:eastAsia"), "宋体")
+
+#     # 段落格式设置
+#     paragraph_format = normal_style.paragraph_format
+#     paragraph_format.first_line_indent = Cm(0.74)  # 首行缩进 2字符
+#     paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE  # 行距类型
+#     paragraph_format.line_spacing = 1.5  # 1.5倍行距
+#     paragraph_format.space_before = Pt(0)  # 段前间距
+#     paragraph_format.space_after = Pt(0)  # 段后间距
+#     paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
+
+#     # ================================
+#     # 设置标题样式（支持 3 级标题）
+#     # ================================
+#     heading_configs = {
+#         "Heading 1": {
+#             "size": Pt(16),  # 三号字
+#             "bold": True,
+#             "font_en": "Times New Roman",
+#             "font_cn": "黑体",
+#             "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,  # 居中对齐
+#             "line_spacing": 1.5,
+#             "space_before": Pt(24),
+#             "space_after": Pt(12),
+#         },
+#         "Heading 2": {
+#             "size": Pt(15),  # 小三号
+#             "bold": True,
+#             "font_en": "Times New Roman",
+#             "font_cn": "宋体",
+#             "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,  # 左对齐
+#             "line_spacing": 1.0,
+#             "space_before": Pt(18),
+#             "space_after": Pt(6),
+#         },
+#         "Heading 3": {
+#             "size": Pt(14),  # 四号字
+#             "bold": True,
+#             "font_en": "Times New Roman",
+#             "font_cn": "宋体",
+#             "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,  # 右对齐
+#             "line_spacing": WD_LINE_SPACING.EXACTLY,  # 固定值
+#             "line_spacing_pt": Pt(20),  # 固定 20磅
+#             "space_before": Pt(12),
+#             "space_after": Pt(3),
+#         },
+#     }
+
+#     for style_name, config in heading_configs.items():
+#         heading_style = doc.styles[style_name]
+#         # 字体设置
+#         heading_style.font.size = config["size"]
+#         heading_style.font.bold = config["bold"]
+#         heading_style.font.name = config["font_en"]
+#         # 中文字体
+#         rpr = heading_style.element.get_or_add_rPr()
+#         rpr.get_or_add_rFonts().set(qn("w:eastAsia"), config["font_cn"])
+#         # 段落格式
+#         pf = heading_style.paragraph_format
+#         pf.alignment = config["alignment"]
+#         pf.line_spacing_rule = config.get("line_spacing_rule", WD_LINE_SPACING.MULTIPLE)
+
+#         # 支持固定行距（当 line_spacing_pt 存在时）
+#         if "line_spacing_pt" in config:
+#             pf.line_spacing = config["line_spacing_pt"]
+#             pf.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+
+#         pf.space_before = config["space_before"]
+#         pf.space_after = config["space_after"]
+#         # 特殊设置（如大纲级别）
+# pf.outline_level = getattr(WD_PARAGRAPH_ALIGNMENT, f"HEADING_{style_name[-1]}")
+
+# ================================
+# 新增引用样式（自定义样式）
+# ================================
+# quote_style = doc.styles.add_style("Quote", WD_STYLE_TYPE.PARAGRAPH)
+# quote_style.base_style = doc.styles["Normal"]
+# # 字体设置
+# quote_style.font.italic = True
+# quote_style.font.color.rgb = RGBColor(128, 128, 128)  # 灰色
+# # 段落格式
+# qpf = quote_style.paragraph_format
+# qpf.left_indent = Cm(1.0)  # 左缩进 1厘米
+# qpf.right_indent = Cm(1.0)  # 右缩进 1厘米
+# qpf.line_spacing = 1.25  # 1.25倍行距
+# qpf.shading.background_pattern_color = RGBColor(240, 240, 240)  # 背景色
 
 
 def set_heading_style(heading, level=1):
-    """
-    设置一级标题样式：
-    - 字体为黑体
-    - 字号为三号
-    - 加粗
-    - 顶格（左对齐）
-
-    :heading: 段落对象
-    :text: 标题文本
-    """
     # 设置标题的字体和字号
     run = heading.runs[0]  # 获取标题的第一个 Run 对象
     if level == 1:
@@ -28,15 +121,23 @@ def set_heading_style(heading, level=1):
         run.bold = True  # 设置加粗
         run.font.name = "Times New Roman"  # 设置字体为黑体
         r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")  # 设置中文为黑体
+        r.rPr.rFonts.set(qn("w:eastAsia"), "黑体")  # 设置中文为黑体
         run.font.color.rgb = RGBColor(0, 0, 0)
-
         # 设置段落格式（顶格、左对齐）
         heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT  # 左对齐
     elif level == 2:
         run.font.size = Pt(12)  #
         run.bold = True  # 设置加粗
-        run.font.name = "SimSong"  # 设置字体为黑体
+        run.font.name = "Times New Roman"  # 设置字体为黑体
+        r = run._element
+        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")  # 设置中文为黑体
+        run.font.color.rgb = RGBColor(0, 0, 0)
+        # 设置段落格式（顶格、左对齐）
+        heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT  # 左对齐
+    elif level == 3:
+        run.font.size = Pt(12)  #
+        run.bold = False  # 设置加粗
+        run.font.name = "Times New Roman"  # 设置字体为黑体
         r = run._element
         r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")  # 设置中文为黑体
         run.font.color.rgb = RGBColor(0, 0, 0)
@@ -46,7 +147,7 @@ def set_heading_style(heading, level=1):
 
 def set_paragraph_style(
     paragraph,
-    is_chinese=True,
+    is_chinese=False,
     font_size=12,
     line_spacing=1.5,
     space_before=6,
@@ -74,7 +175,7 @@ def set_paragraph_style(
     # 设置 Run 的字体属性
     for run in paragraph.runs:
         if is_chinese:
-            run.font.name = "Times New Roman"  # 中文设置
+            run.font.name = "simsun"  # 中文设置
             run.font.color.rgb = RGBColor(0, 0, 0)
             r = run._element
             r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")  # 设置黑体
@@ -82,34 +183,6 @@ def set_paragraph_style(
             run.font.name = "Times New Roman"  # 英文设置
             run.font.color.rgb = RGBColor(0, 0, 0)
         run.font.size = Pt(font_size)  # 设置字号
-
-
-def add_paragraph(doc, text):
-    """
-    插入自定义格式的段落：小四字号、宋体、1.5倍行距、两端对齐、首行缩进2字符。
-
-    :param doc: Document 对象
-    :param text: 要插入的文本
-    """
-    # 插入段落
-    paragraph = doc.add_paragraph(text)
-
-    # 设置段落格式
-    paragraph_format = paragraph.paragraph_format
-    paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
-    paragraph_format.line_spacing = 1.5  # 1.5倍行距
-    paragraph_format.first_line_indent = Pt(
-        24
-    )  # 首行缩进2字符（每个字符12磅，2字符即24磅）
-
-    # 设置字体样式
-    for run in paragraph.runs:
-        run.font.name = "Times New Roman"  # 设置字体为宋体
-        run.font.size = Pt(12)  # 小四字号（12磅）
-        r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")  # 确保设置为宋体
-
-    return paragraph
 
 
 def add_table_header(doc, text):
@@ -150,11 +223,6 @@ def add_pic_header(doc, text):
         r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")  # 确保设置为宋体
 
     return paragraph
-
-
-from PIL import Image
-from docx import Document
-from docx.shared import Inches
 
 
 def insert_image(doc, image_path, width=None, height=None):
@@ -207,35 +275,100 @@ def apply_heading_style_to_all_titles(doc):
         #     set_paragraph_style(paragraph)
 
 
-def auto_report_EN():
-    from docx import Document
-    from docx.shared import Inches, Pt
-    from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
-    from docx.enum.section import WD_SECTION
-    from datetime import datetime
-    from docx.oxml.ns import qn  # 用于设置中文字体
-    from pathlib import Path
-    import geopandas as gpd
+def setup_styles(doc):
+    # =====================================
+    # 正文样式 (Normal)
+    # =====================================
+    normal_style = doc.styles["Normal"]
+    normal_style.font.name = "Times New Roman"  # 英文字体
+    normal_style.font.size = Pt(11)  # 字号
+    normal_style.font.color.rgb = RGBColor(0, 0, 0)
+    # 段落格式
+    normal_style.paragraph_format.first_line_indent = Cm(0.74)  # 首行缩进
+    normal_style.paragraph_format.line_spacing = 1.5  # 1.15倍行距
+    normal_style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
 
+    # =====================================
+    # List样式 (List Paragraph)
+    list_style = doc.styles["List"]
+    list_style.font.name = "Times New Roman"  # 英文字体
+    list_style.font.size = Pt(11)  # 字号
+    list_style.font.color.rgb = RGBColor(0, 0, 0)
+    # 段落格式
+    list_style.paragraph_format.first_line_indent = Cm(0)  # 首行缩进
+    list_style.paragraph_format.line_spacing = 1.5  # 1.15倍行距
+    list_style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
+
+    # =====================================
+    # 标题样式 (Heading 1-3)
+    # =====================================
+    heading_configs = {
+        "Heading 1": {
+            "font": "Arial Black",
+            "size": Pt(16),
+            "bold": True,
+            "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,
+            "space_before": Pt(24),
+            "space_after": Pt(12),
+        },
+        "Heading 2": {
+            "font": "Arial Black",
+            "size": Pt(14),
+            "bold": True,
+            "italic": True,
+            "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,
+            "space_before": Pt(18),
+            "space_after": Pt(6),
+        },
+        "Heading 3": {
+            "font": "Times New Roman",
+            "size": Pt(12),
+            "bold": False,
+            "italic": True,
+            "underline": False,
+            "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,
+            "space_before": Pt(12),
+            "space_after": Pt(3),
+        },
+    }
+
+    for style_name, config in heading_configs.items():
+        style = doc.styles[style_name]
+        # 字体设置
+        style.font.name = config["font"]
+        style.font.size = config["size"]
+        style.font.bold = config.get("bold", False)
+        style.font.italic = config.get("italic", False)
+        style.font.underline = config.get("underline", False)
+        style.font.color.rgb = RGBColor(0, 0, 0)  # 统一标题颜色
+        # 段落格式
+        style.paragraph_format.alignment = config["alignment"]
+        style.paragraph_format.line_spacing = 1.0
+        style.paragraph_format.space_before = config["space_before"]
+        style.paragraph_format.space_after = config["space_after"]
+        style.paragraph_format.first_line_indent = Pt(0)  # 首行缩进 0 字符
+
+
+def auto_report_EN():
     # 创建文档
     doc = Document()
+    setup_styles(doc)  # 设置默认样式
 
     # 封面标题
 
     # 添加空段落，使标题位于页面中部
-    for _ in range(8):  # 根据页面长度适当调整数量
+    for _ in range(6):  # 根据页面长度适当调整数量
         i = doc.add_paragraph()
         i.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     title = doc.add_paragraph()
-    title_run = title.add_run("Microturbulent Pollution Investigation Report")
+    title_run = title.add_run(
+        "XXX Petroleum Hydrocarbon Contaminated Site MIM Investigation Report"
+    )
     title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # 居中对齐
-    title_run.font.name = "Times New Roman"  # 设置中文字体
-    title_run.font.size = Pt(40)  # 设置字体大小为三号
+    title_run.font.name = "Times New Roman"  # 设置中文字
+    title_run.font.size = Pt(20)  # 设置字体大小为三号
     title_run.bold = True  # 加粗
-    r = title_run._element  # 处理中文字体
-    r.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
 
-    # 添加单位名称
     # 添加空段落，使标题位于页面中部
     for _ in range(10):  # 根据页面长度适当调整数量
         i = doc.add_paragraph()
@@ -256,46 +389,46 @@ def auto_report_EN():
     date_run = date_paragraph.add_run(datetime.now().strftime("%Y-%m"))
     date_run.font.name = "Times New Roman"
     date_run.font.size = Pt(16)
-    r = date_run._element  # 处理中文字体
-    r.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
-
     # 添加分节符
     doc.add_section(WD_SECTION.NEW_PAGE)
 
     # 添加正文示例
     doc.add_heading("0 Clarification", level=1)
-    add_paragraph(
-        doc,
+    doc.add_paragraph(
         "Bound by a confidentiality agreement, this report only provides examples and methods of arrangement, and does not contain real content.",
     )
-    add_paragraph(
-        doc,
+    doc.add_paragraph(
         "Below we show how to insert multi-level headings, paragraphs, tables, images, etc. through a partial demo. Adjust the code according to different needs to generate a report that meets the requirements.",
     )
-    doc.add_heading("1 ", level=1)
-    add_paragraph(
-        doc,
-        """
-    一份完整的调查报告通常包括以下内容：
-    1. 项目背景：简要介绍调查项目的背景和目的；
-    2. 现场调查：对调查现场的基本情况、调查方法和调查结果进行描述；
-    3. 数据分析：对调查数据进行评估和分析，确定污染源区和污染羽；
-    4. 结果展示：通过图表、表格等形式展示调查结果；
-    5. 结论与建议：总结调查结果，提出后续工作建议。
-    """,
+    doc.add_heading("1 Introduction", level=1)
+    doc.add_paragraph(
+        "A complete investigation report typically includes the following components:",
+        style="List",
     )
-
-    add_paragraph(
-        doc,
-        "",
+    doc.add_paragraph(
+        "1. Project Background: Brief introduction to the background and objectives of the investigation project",
+        style="List",
+    )
+    doc.add_paragraph(
+        "2. Field Investigation: Description of the basic site conditions, investigation methods, and investigation results",
+        style="List",
+    )
+    doc.add_paragraph(
+        "3. Data Analysis: Evaluation and analysis of investigation data to identify pollution source areas and contaminant plumes",
+        style="List",
+    )
+    doc.add_paragraph(
+        "4. Result Presentation: Display of investigation results through diagrams, tables, and other visual formats",
+        style="List",
+    )
+    doc.add_paragraph(
+        "5. Conclusion and Recommendations: Summary of investigation findings and proposals for follow-up actions",
+        style="List",
     )
 
     doc.add_heading("2 Adding different levels of headings", level=1)
     doc.add_heading("2.1 Secondary headings", level=2)
     doc.add_heading("2.1.1 Tertiary heading", level=3)
-
-    insert_image(doc, "./ref/微扰动原理.png", width=4)
-    add_pic_header(doc, "图3-1 微扰动调查技术原理图")
 
     # 填充表格
     import random
@@ -317,46 +450,13 @@ def auto_report_EN():
         for j in range(1, 15):
             table.cell(0, j).text = str(random.randint(10, 100))
 
-    doc.add_heading("5 数据评估与结果分析", level=1)
-    doc.add_heading("5.1 判定原则", level=2)
-    add_paragraph(
-        doc,
-        "调查人员须具备一定专业知识和工作经验，推荐综合所有指标，以K-MEANS聚类法、参考值法等，识别环境背景区域，确定微扰动调查指标的环境环境背景值。与环境环境背景值比较，其中氡气明显异常低，是微扰动调查判定污染源区的必要条件。以如下其他四个辅助条件圈定污染羽，并可辅以判定污染源区：①VOCs明显异常高；②CH4明显异常高；③CO2明显异常高、O2明显异常低；④功能基因明显异常高。",
-    )
-    add_paragraph(doc, "（1）污染源区判定原则")
-    add_paragraph(
-        doc,
-        "①必要条件满足，且其他四个辅助条件均满足，可直接依据微扰动调查成果，将点位所在区域判定为污染源区；",
-    )
-    add_paragraph(
-        doc,
-        "②必要条件满足，且其他辅助条件满足三个，可结合采样检测进行验证，当表层土壤和地下水中污染物浓度含量均超过相关标准限值要求时，将点位所在区域判定为污染源区；",
-    )
-    add_paragraph(
-        doc,
-        "③必要条件满足，且其他辅助条件满足两个及以下，须结合采样检测进行验证，尤其钻探过程中土壤和地下水中明显观察到NAPLs存在时，可将点位所在区域判定为污染源区；",
-    )
-    add_paragraph(
-        doc,
-        "④以上条件均不满足，应开展监测，至少3次监测观察到NAPLs存在时，可将点位所在区域判定为污染源区。",
-    )
-    add_paragraph(doc, "（2）污染羽判定原则")
-    add_paragraph(
-        doc,
-        "①其他辅助条件满足三个及以上，可直接依据微扰动调查成果，将点位所在区域判定为污染羽；",
-    )
-    add_paragraph(
-        doc,
-        "②其他辅助条件满足两个及以下，须结合采样检测进行验证，当土壤或地下水中有污染物检出时，可将点位所在区域判定为污染羽。",
-    )
-
     all_image_paths = [
-        "./ref/KMEANS-氡气.png",
-        "./ref/KMEANS-VOCs.png",
-        "./ref/KMEANS-CH4.png",
-        "./ref/KMEANS-CO2.png",
-        "./ref/KMEANS-O2.png",
-        "./ref/KMEANS-功能基因.png",
+        "./auto_report_cache/KMEANS-Radon.png",
+        "./auto_report_cache/KMEANS-VOCs.png",
+        "./auto_report_cache/KMEANS-CH4.png",
+        "./auto_report_cache/KMEANS-CO2.png",
+        "./auto_report_cache/KMEANS-O2.png",
+        "./auto_report_cache/KMEANS-FG.png",
     ]
     image_paths = []
     for path in all_image_paths:
@@ -378,27 +478,14 @@ def auto_report_EN():
             cell.paragraphs[0].add_run().add_picture(image_path, width=Inches(2))
         else:
             cell.add_paragraph()
-    add_pic_header(doc, "图5-1 K-MEANS法辅助确定环境背景值")
-    add_paragraph(
-        doc,
-        "按照上述确定的环境背景和明显异常的阈值，将VOCs、CO2、CH4大于阈值的确定为异常点位，小于阈值的确定为无异常点位；O2小于阈值的确定为异常点位，大于阈值的确定为无异常点位，点位分布如图所示。",
-    )
-    columns = [
-        "氡气异常低",
-        "VOCs异常高",
-        "CO2异常高",
-        "O2异常低",
-        "CH4异常高",
-        "功能基因异常高",
-    ]
     labels = ["氡气", "VOCs", "CO2", "O2", "CH4", "功能基因"]
     all_image_paths = [
-        "./pic/氡气.png",
-        "./pic/VOCs.png",
-        "./pic/CH4.png",
-        "./pic/CO2.png",
-        "./pic/O2.png",
-        "./pic/功能基因.png",
+        "./auto_report_cache/Rn.png",
+        "./auto_report_cache/VOCs.png",
+        "./auto_report_cache/CH4.png",
+        "./auto_report_cache/CO2.png",
+        "./auto_report_cache/O2.png",
+        "./auto_report_cache/FG.png",
     ]
     image_paths = []
     for path in all_image_paths:
@@ -420,8 +507,9 @@ def auto_report_EN():
             cell.paragraphs[0].add_run().add_picture(image_path, width=Inches(2))
         else:
             cell.add_paragraph()
-    add_pic_header(doc, "Fig5-2 微扰动调查异常点位分布图")
     doc.add_paragraph("")
+
+    # 应用样式
     return doc
 
 

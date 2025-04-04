@@ -235,15 +235,15 @@ def safe_remove(lst, item):
 def calculate_ExperienceValueMethod_scores(
     gdf, options, boundary_file, abnormal_score_config: dict = abnormal_score_config
 ):
-    gdf = point_dataset_preprocess(gdf, options)
+    new_gdf = point_dataset_preprocess(gdf, options)
     boundary_gdf = boundary_file_preprocess(boundary_file)
     # 确定需要处理的指标列
     indicators = list(abnormal_score_config.keys())
     subset = safe_remove(indicators.copy(), "Radon")
-    gdf = gdf.dropna(subset=subset)
+    new_gdf = new_gdf.dropna(subset=subset)
     # * 数据单位转换(针对测试数据)
-    gdf["VOCs"] = gdf["VOCs"].apply(lambda x: x / 1000)
-    gdf["CO2"] = gdf["CO2"].apply(lambda x: x / 1000000)
+    new_gdf["VOCs"] = new_gdf["VOCs"].apply(lambda x: x / 1000)
+    new_gdf["CO2"] = new_gdf["CO2"].apply(lambda x: x / 1000000)
 
     # *
     # 定义行处理函数
@@ -255,14 +255,18 @@ def calculate_ExperienceValueMethod_scores(
         return pd.Series(result)
 
     # 执行计算并合并结果
-    gdf = gdf.join(gdf.apply(process_row, axis=1))
-    gdf["Contamination_type"] = gdf.apply(计算单个污染类型, axis=1)
-    gdf["Scope_of_contamination"] = gdf.apply(判断污染范围, axis=1)
+    new_gdf = new_gdf.join(new_gdf.apply(process_row, axis=1))
+    new_gdf["Contamination_type"] = new_gdf.apply(
+        Distinguishing_type_of_contamination, axis=1
+    )
+    new_gdf["Scope_of_contamination"] = new_gdf.apply(
+        Distinguishing_scope_of_contamination, axis=1
+    )
 
     result_dict = {}
-    result_dict["gdf"] = gdf
+    result_dict["gdf"] = new_gdf
     result_dict["outline_dataset"] = boundary_gdf
-    fig_dict = experienceValue_anomaly_fig(gdf, boundary_gdf)
+    fig_dict = experienceValue_anomaly_fig(new_gdf, boundary_gdf)
     result_dict.update(fig_dict)
     return result_dict
 
@@ -270,24 +274,25 @@ def calculate_ExperienceValueMethod_scores(
 def experienceValue_anomaly_fig(
     gdf,
     boundary_gdf,
-    epsg_code=Drawing_specifications.EPSG_code,
 ):
     result_dict = {}
-    result_dict["source_fig"] = 绘制污染源区图(gdf, boundary_gdf, epsg_code)
-    result_dict["scope_fig"] = 绘制污染范围(gdf, boundary_gdf, epsg_code)
-    result_dict["exceed_fig"] = 绘制超标点位(gdf, boundary_gdf, epsg_code)
-    result_dict["pollution_level_fig"] = 污染等级识别(gdf, boundary_gdf)
+    result_dict["source_fig"] = Plot_source_zone(gdf, boundary_gdf)
+    result_dict["scope_fig"] = Plot_scope_of_contamination(gdf, boundary_gdf)
+    result_dict["exceed_fig"] = Plot_anomaly_point(
+        gdf[gdf["The_other_soil_gas_scores"] >= 6], boundary_gdf
+    )
+    result_dict["pollution_level_fig"] = Score_interpolation(gdf, boundary_gdf)
     return result_dict
 
 
-def 判断污染范围(row):
+def Distinguishing_scope_of_contamination(row):
     if row["The_other_soil_gas_scores"] >= 1:
         return 1
     else:
         return 0
 
 
-def 计算单个污染类型(row):
+def Distinguishing_type_of_contamination(row):
     if row["All_indicators_Scores"] >= 17 and row["Radon_Score"] >= 1:
         return "Source_of_contamination"
     elif row["All_indicators_Scores"] >= 6 and row["VOCs_Score"] >= 1:
@@ -296,30 +301,36 @@ def 计算单个污染类型(row):
         return "Scores<6"
 
 
-def 绘制污染源区图(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_code):
+def Plot_source_zone(gdf, boundary_gdf):
     import matplotlib
+    from matplotlib.lines import Line2D
 
     fig = Figure(figsize=(10, 8), dpi=90)
     ax = fig.add_subplot(111)
-    # matplotlib.rcParams["font.family"] = "SimSun"
     matplotlib.rcParams["font.family"] = "Times New Roman"
     # 设置颜色映射，按 'Category' 分配颜色
     colors = {
         "Source_of_contamination": "red",
-        "Suspected_source_of_contamination": "yellow",
+        "Suspected_source_of_contamination": "orange",
         "Scores<6": "green",
     }
-    gdf["color"] = gdf["Contamination_type"].map(colors).fillna("gray")
+    size_map = {"red": 50, "orange": 40, "green": 30}
+    gdf_plot = gdf.copy()
+    gdf_plot["color"] = gdf_plot["Contamination_type"].map(colors).fillna("gray")
+    gdf_plot["size"] = gdf_plot["color"].map(size_map).fillna(0)
     boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
-    gdf = gdf.to_crs(epsg=epsg_code)
-    gdf.plot(ax=ax, color=gdf["color"], markersize=30)
+    ax.scatter(
+        gdf_plot.geometry.x,
+        gdf_plot.geometry.y,
+        marker="o",
+        s=gdf_plot["size"],
+        color=gdf_plot["color"],
+    )
+    # gdf.plot(ax=ax, color=gdf["color"], markersize=30)
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
-    ax.set_aspect("auto")
-    # 创建自定义图例并设置其位置为右下角
-    from matplotlib.lines import Line2D
 
     legend_elements = [
         Line2D(
@@ -327,7 +338,8 @@ def 绘制污染源区图(gdf, boundary_gdf, epsg_code=Drawing_specifications.EP
             [0],
             marker="o",
             color="w",
-            label="Total Scores≥17,Radon Score≥1",
+            # label="Total Scores≥17,Radon Score≥1",
+            label="Critical Risk Point",
             markerfacecolor="red",
             markersize=10,
         ),
@@ -336,8 +348,9 @@ def 绘制污染源区图(gdf, boundary_gdf, epsg_code=Drawing_specifications.EP
             [0],
             marker="o",
             color="w",
-            label="Total Scores≥6,VOCs Score≥1",
-            markerfacecolor="yellow",
+            # label="Total Scores≥6,VOCs Score≥1",
+            label="Significant Risk Point",
+            markerfacecolor="orange",
             markersize=10,
         ),
         Line2D(
@@ -345,20 +358,46 @@ def 绘制污染源区图(gdf, boundary_gdf, epsg_code=Drawing_specifications.EP
             [0],
             marker="o",
             color="w",
-            label="Total Scores<6",
+            # label="Total Scores<6",
+            label="Marginal Risk Point",
             markerfacecolor="green",
             markersize=10,
         ),
     ]
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
+    plt.tight_layout()
+
+    # *添加注记(为论文准备)
+    # ax.annotate(
+    #     "(a)",
+    #     xy=(0.03, 0.92),
+    #     xycoords="axes fraction",
+    #     ha="left",
+    #     va="bottom",
+    #     fontsize=20,
+    #     bbox=dict(
+    #         boxstyle="round,pad=0.3", facecolor="white", edgecolor="gray", alpha=0
+    #     ),
+    # )
+    #
+    import os
+
+    os.makedirs(os.path.dirname("./auto_report_cache"), exist_ok=True)
+    fig.savefig(
+        "./auto_report_cache/source_fig.png",
+        dpi=900,
+        bbox_inches="tight",
+        pad_inches=0.1,
+    )
+
+    # 关闭图形防止内存泄漏
+    plt.close(fig)
     return fig
 
 
-def 绘制污染范围(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_code):
-    import geopandas as gpd
+def Plot_scope_of_contamination(gdf, boundary_gdf):
     import matplotlib
     import matplotlib.pyplot as plt
-    from matplotlib import ticker
     from matplotlib.lines import Line2D
 
     fig = Figure(figsize=(10, 8), dpi=90)
@@ -379,7 +418,8 @@ def 绘制污染范围(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_
             [0],
             marker="^",
             color="w",
-            label="Scores≥1",
+            # label="Scores≥1",
+            label="Anomaly Point",
             markerfacecolor="orange",
             markersize=10,
         ),
@@ -388,7 +428,8 @@ def 绘制污染范围(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_
             [0],
             marker="^",
             color="w",
-            label="Scores<1",
+            # label="Scores<1",
+            label="Normal Point",
             markerfacecolor="green",
             markersize=10,
         ),
@@ -397,11 +438,34 @@ def 绘制污染范围(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_
     # 添加图例到右下角
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
+    # *添加注记(为论文准备)
+    # ax.annotate(
+    #     "(b)",
+    #     xy=(0.03, 0.92),
+    #     xycoords="axes fraction",
+    #     ha="left",
+    #     va="bottom",
+    #     fontsize=20,
+    #     bbox=dict(
+    #         boxstyle="round,pad=0.3", facecolor="white", edgecolor="gray", alpha=0
+    #     ),
+    # )
+    import os
+
+    os.makedirs(os.path.dirname("./auto_report_cache"), exist_ok=True)
+    fig.savefig(
+        "./auto_report_cache/scope_fig.png",
+        dpi=900,
+        bbox_inches="tight",
+        pad_inches=0.1,
+    )
+
+    # 关闭图形防止内存泄漏
+    plt.close(fig)
     return fig
 
 
-def 绘制超标点位(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_code):
-    import geopandas as gpd
+def Plot_anomaly_point(gdf, boundary_gdf):
     import matplotlib
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
@@ -412,7 +476,7 @@ def 绘制超标点位(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_
     boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red")
     gdf.plot(
         ax=ax,
-        color="red",
+        color="orange",
         markersize=30,
     )
     add_north_arrow(ax)
@@ -426,8 +490,9 @@ def 绘制超标点位(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_
             [0],
             marker="o",
             color="w",
-            label="Scores≥6",
-            markerfacecolor="red",
+            # label="Scores≥6",
+            label="Exceedance point",
+            markerfacecolor="orange",
             markersize=10,
         )
     ]
@@ -435,6 +500,19 @@ def 绘制超标点位(gdf, boundary_gdf, epsg_code=Drawing_specifications.EPSG_
     # 添加图例到右下角
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
+    # 保存图像（DPI=300，防裁剪）
+    import os
+
+    os.makedirs(os.path.dirname("./auto_report_cache"), exist_ok=True)
+    fig.savefig(
+        "./auto_report_cache/exceed_fig.png",
+        dpi=900,
+        bbox_inches="tight",
+        pad_inches=0.1,
+    )
+
+    # 关闭图形防止内存泄漏
+    plt.close(fig)
     return fig
 
 
@@ -487,7 +565,7 @@ from scipy.interpolate import griddata
 from shapely.ops import unary_union
 
 
-def 污染等级识别(gdf, boundary_gdf, method="linear"):
+def Score_interpolation(gdf, boundary_gdf, method="linear"):
     try:
         # 数据预处理
         gdf.to_csv("gdf.csv")
@@ -829,13 +907,22 @@ def calculate_backgroundValue(data, boundarys):
     gdf = new_data.get("gdf")
     result_gdf = anomaly_identification(gdf, boundarys)
     anomaly_figs = []
+    # header = [
+    #     "Point ID",
+    #     "Abnormally Low Radon",
+    #     "Abnormally High VOCs",
+    #     "Abnormally High CO2",
+    #     "Abnormally Low O2",
+    #     "Abnormally High CH4",
+    #     "Abnormally High Functional Genes",
+    # ]
     headers = [
-        ("氡气异常低", MIM_indicators.Radon),
-        ("VOCs异常高", MIM_indicators.VOCs),
-        ("CO2异常高", MIM_indicators.CO2),
-        ("O2异常低", MIM_indicators.O2),
-        ("CH4异常高", MIM_indicators.CH4),
-        ("功能基因异常高", MIM_indicators.FG),
+        ("Abnormally Low Radon", MIM_indicators.Radon),
+        ("Abnormally High VOCs", MIM_indicators.VOCs),
+        ("Abnormally High CO2", MIM_indicators.CO2),
+        ("Abnormally Low O2", MIM_indicators.O2),
+        ("Abnormally High CH4", MIM_indicators.CH4),
+        ("Abnormally High Functional Genes", MIM_indicators.FG),
     ]
     for column, indicator in headers:
         anomaly_figs.append(
@@ -849,7 +936,8 @@ def calculate_backgroundValue(data, boundarys):
                 ),
             ),
         )
-    result_gdf["点位"] = result_gdf["Point_ID"]
+    # result_gdf["点位"] = result_gdf["Point_ID"]
+    result_gdf["Point ID"] = result_gdf["Point_ID"]
     new_data["gdf"] = result_gdf
     new_data["anomaly_figs"] = anomaly_figs
     return new_data
@@ -858,7 +946,8 @@ def calculate_backgroundValue(data, boundarys):
 
 def anomaly_identification(gdf, boundarys):
 
-    gdf["氡气异常低"] = gdf[MIM_indicators.Radon.value.name].apply(
+    # gdf["氡气异常低"] =
+    gdf["Abnormally Low Radon"] = gdf[MIM_indicators.Radon.value.name].apply(
         lambda x: (
             "×"
             if x is not None
@@ -871,7 +960,8 @@ def anomaly_identification(gdf, boundarys):
             )
         )
     )
-    gdf["VOCs异常高"] = gdf[MIM_indicators.VOCs.value.name].apply(
+    # gdf["VOCs异常高"]
+    gdf["Abnormally High VOCs"] = gdf[MIM_indicators.VOCs.value.name].apply(
         lambda x: (
             "√"
             if x is not None
@@ -884,7 +974,8 @@ def anomaly_identification(gdf, boundarys):
             )
         )
     )
-    gdf["O2异常低"] = gdf[MIM_indicators.O2.value.name].apply(
+    # gdf["O2异常低"]
+    gdf["Abnormally Low O2"] = gdf[MIM_indicators.O2.value.name].apply(
         lambda x: (
             "×"
             if x is not None
@@ -897,7 +988,8 @@ def anomaly_identification(gdf, boundarys):
             )
         )
     )
-    gdf["CO2异常高"] = gdf[MIM_indicators.CO2.value.name].apply(
+    # gdf["CO2异常高"]
+    gdf["Abnormally High CO2"] = gdf[MIM_indicators.CO2.value.name].apply(
         lambda x: (
             "√"
             if x is not None
@@ -910,7 +1002,8 @@ def anomaly_identification(gdf, boundarys):
             )
         )
     )
-    gdf["CH4异常高"] = gdf[MIM_indicators.CH4.value.name].apply(
+    # gdf["CH4异常高"]
+    gdf["Abnormally High CH4"] = gdf[MIM_indicators.CH4.value.name].apply(
         lambda x: (
             "√"
             if x is not None
@@ -923,7 +1016,8 @@ def anomaly_identification(gdf, boundarys):
             )
         )
     )
-    gdf["功能基因异常高"] = gdf[MIM_indicators.FG.value.name].apply(
+    # gdf["功能基因异常高"]
+    gdf["Abnormally High Functional Genes"] = gdf[MIM_indicators.FG.value.name].apply(
         lambda x: (
             "√"
             if x is not None
@@ -1132,16 +1226,10 @@ import seaborn as sns
 def return_PCA_results(point_dataset, options, outline_dataset):
     gdf = point_dataset_preprocess(point_dataset=point_dataset, options=options)
     boundary_gdf = boundary_file_preprocess(outline_dataset)
-    pca_columns = []
-    for key, value in options.items():
-        if value != None and type(value) == str:
-            pca_columns.append(value)
-    print(pca_columns)
-    pca_results, pca_loadings, pca_var_ratio, pca_scores = process_PCA(
-        gdf=gdf, pca_columns=pca_columns
+    pca_results, pca_loadings, pca_var_ratio, pca_gdf = process_PCA(
+        gdf=gdf, options=options
     )
-    gdf["PC1_Score"] = pca_scores["PC1"]
-    PC1_score_fig = plot_PC1_score(gdf, boundary_gdf, column="PC1_Score")
+    PC1_score_fig = plot_PC1_score(pca_gdf, boundary_gdf, column="PC1")
     PCA_variance_contribution_fig = plot_PCA_variance_contribution(pca_var_ratio)
     PCA_loading_plot_fig = plot_PCA_loading_plot(pca_loadings, pca_var_ratio)
     PCA_Biplot_fig = plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio)
@@ -1150,13 +1238,12 @@ def return_PCA_results(point_dataset, options, outline_dataset):
     for interpolation_method in interpolation_methods:
         fig = plot_PC1_interpolation(
             boundary_gdf=boundary_gdf,
-            points_gdf=gdf,
-            pca_scores=pca_scores,
+            points_gdf=pca_gdf,
             interpolation_method=interpolation_method,
         )
         PC1_interpolation_figs[interpolation_method] = fig
     return {
-        "gdf": gdf,
+        "gdf": pca_gdf,
         "boundary_gdf": boundary_gdf,
         "PC1_score_fig": PC1_score_fig,
         "PCA_variance_contribution_fig": PCA_variance_contribution_fig,
@@ -1166,11 +1253,15 @@ def return_PCA_results(point_dataset, options, outline_dataset):
     }
 
 
-def process_PCA(gdf, pca_columns):
-    # dataset = gdf[pca_columns].dropna()
-    dataset = gdf[gdf[pca_columns].notna().all(axis=1)][pca_columns]
+def process_PCA(gdf, options):
+    pca_columns = []
+    for key, value in options.items():
+        if value != None and type(value) == str and key != "Point_ID":
+            pca_columns.append(value)
+    print("columns for PCA:{pca_columns}")
+    data_pca_analysis = gdf[pca_columns].dropna()
     scaler_pca = StandardScaler()
-    data_pca_scaled = scaler_pca.fit_transform(dataset)
+    data_pca_scaled = scaler_pca.fit_transform(data_pca_analysis)
     pca_analysis = PCA(n_components=3)
     pca_results = pca_analysis.fit_transform(data_pca_scaled)
     # 计算 PCA 载荷矩阵
@@ -1180,7 +1271,20 @@ def process_PCA(gdf, pca_columns):
     # 计算 PCA 方差贡献率
     pca_var_ratio = pca_analysis.explained_variance_ratio_
     pca_scores = pd.DataFrame(pca_results, columns=["PC1", "PC2", "PC3"])
-    return pca_results, pca_loadings, pca_var_ratio, pca_scores
+    pca_data = data_pca_analysis.reset_index(drop=True)
+
+    # 合并原始数据与主成分得分
+    complete_pca_df = pd.concat([pca_data, pca_scores], axis=1)
+
+    # 添加ID和几何信息
+    if options.get("Point_ID") is not None:
+        complete_pca_df["ID"] = gdf.loc[
+            data_pca_analysis.index, options.get("Point_ID")
+        ].values
+    complete_pca_df["geometry"] = gdf.loc[data_pca_analysis.index, "geometry"].values
+    pca_gdf = gpd.GeoDataFrame(complete_pca_df, geometry="geometry")
+    print("pca_gdf:", pca_gdf.head())
+    return pca_results, pca_loadings, pca_var_ratio, pca_gdf
 
 
 def plot_PCA_variance_contribution(pca_var_ratioa):
@@ -1491,12 +1595,11 @@ def add_common_elements(ax, boundary_gdf, points_gdf):
 
 
 def plot_PC1_score(
-    points_gdf: gpd.GeoDataFrame,
+    gdf: gpd.GeoDataFrame,
     boundary_gdf: gpd.GeoDataFrame,
     column: str,
     cmap="viridis",
-    # cmap="plasma",
-    figsize=(10, 8),
+    figsize=(8, 6),
     dpi=150,
     fontsize=12,
     labelpad=15,
@@ -1504,7 +1607,6 @@ def plot_PC1_score(
     import geopandas as gpd
     import matplotlib.pyplot as plt
     import matplotlib as mpl
-    from matplotlib import cm
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     import numpy as np
 
@@ -1514,34 +1616,39 @@ def plot_PC1_score(
             "font.family": "Times New Roman",
             "font.size": fontsize,
             "axes.linewidth": 0.8,
+            "axes.labelweight": "bold",
             "savefig.dpi": dpi,
             "figure.facecolor": "white",
         }
     )
-
+    values = gdf[column].values
     # 创建画布
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.2)
 
     # 绘制点图
-    points_gdf.plot(
+    norm = mpl.colors.Normalize(vmin=np.nanmin(values), vmax=np.nanmax(values))
+    default_style = {"marker": "o", "edgecolor": "black", "linewidth": 0.5}
+
+    gdf.plot(
         ax=ax,
         column=column,
         cmap=cmap,
         markersize=20,
+        norm=norm,
         legend=True,
-        cax=cax,  # 指定colorbar位置
-        legend_kwds={"label": f"{column} (unit)", "orientation": "vertical"},
+        cax=cax,
+        legend_kwds={"label": f"{column}", "orientation": "vertical"},
+        **default_style,  # 默认样式
     )
 
     # 绘制边界
-    boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="red", linewidth=1)
-
+    boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="black", linewidth=1.2)
     # 坐标轴美化
-    ax.tick_params(axis="both", which="major", labelsize=fontsize - 2)
-    ax.set_xlabel("Longitude", weight="bold", labelpad=labelpad)
-    ax.set_ylabel("Latitude", weight="bold", labelpad=labelpad)
+    ax.tick_params(axis="both", which="major", labelsize=fontsize - 2, direction="in")
+    ax.set_xlabel("X", labelpad=labelpad)
+    ax.set_ylabel("Y", labelpad=labelpad)
     return fig
 
 
@@ -1549,12 +1656,11 @@ def plot_PC1_interpolation(
     boundary_gdf,
     points_gdf,
     interpolation_method,
-    pca_scores,
 ) -> Figure:
     # 提取插值点坐标
     x = points_gdf.geometry.x
     y = points_gdf.geometry.y
-    z = pca_scores["PC1"].values
+    z = points_gdf["PC1"].values
 
     # 创建网格
     grid_x, grid_y = np.mgrid[

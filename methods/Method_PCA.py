@@ -128,13 +128,6 @@ class PCA_function_win(QWidget):
         show_multiple_plots([self.result_dict["PC1_score_fig"]])
 
     def display_PC1_interpolation(self):
-        # interpolation_methods = ["Nearest", "Cubic", "IDW", "Kriging"]
-        # figs = [
-        #     fig
-        #     for method, fig in self.result_dict["PC1_interpolation_figs"].items()
-        #     if method in interpolation_methods
-        # ]
-        # show_multiple_plots(figs)
         self.PC1_interpolation_win = PC1_Interpolation(self.result_dict)
         self.PC1_interpolation_win.show()
 
@@ -192,8 +185,10 @@ class PC1_Interpolation(QWidget):
     def update_canvas(self, method):
         """根据方法名更新画布和工具栏"""
         try:
-            fig = self.result_dict["PC1_interpolation_figs"][method]
+            from copy import deepcopy
 
+            fig = self.result_dict["PC1_interpolation_figs"][method]
+            fig = deepcopy(fig)
             # 清理旧组件
             if self.current_canvas:
                 self.dynamic_layout.removeWidget(self.current_canvas)

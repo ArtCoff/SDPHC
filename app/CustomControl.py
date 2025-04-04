@@ -20,15 +20,10 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QVBoxLayout,
     QHBoxLayout,
+    QGridLayout,
     QProgressBar,
 )
 from app.PredefinedData import Methods
-from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QWidget,
-    QFileDialog,
-    QMessageBox,
-)
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from app.Pyside6Functions import center_window, load_settings, update_config_value
@@ -162,11 +157,16 @@ class CustomRadioButtons(QWidget):
         self.radiobutton1.toggled.connect(self.on_radio_button_toggled)
         self.radiobutton2.toggled.connect(self.on_radio_button_toggled)
         self.radiobutton3.toggled.connect(self.on_radio_button_toggled)
-        hlayout = QHBoxLayout()
-        hlayout.addWidget(self.radiobutton1)
-        hlayout.addWidget(self.radiobutton2)
-        hlayout.addWidget(self.radiobutton3)
-        self.setLayout(hlayout)
+        # hlayout = QHBoxLayout()
+        # hlayout.addWidget(self.radiobutton1)
+        # hlayout.addWidget(self.radiobutton2)
+        # hlayout.addWidget(self.radiobutton3)
+        grid = QGridLayout()
+        grid.addWidget(self.radiobutton1, 0, 0)
+        grid.addWidget(self.radiobutton2, 0, 1)
+        grid.addWidget(self.radiobutton3, 1, 0)
+        self.setLayout(grid)
+        # self.setLayout(hlayout)
 
     def on_radio_button_toggled(self):
         radiobutton = self.sender()

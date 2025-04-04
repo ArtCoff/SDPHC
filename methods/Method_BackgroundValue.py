@@ -153,17 +153,18 @@ class indicator_background_value_input(QWidget):
     def set_UI(self):
         layout = QHBoxLayout()
         layout.addWidget(self.label, stretch=1)
-        self.label.setMinimumSize(80, 30)
+        self.label.setMinimumSize(60, 30)
         layout.addWidget(self.background_value_input, stretch=2)
-        self.background_value_input.setMinimumSize(100, 30)
+        self.background_value_input.setMinimumSize(80, 30)
         layout.addWidget(self.unit_label, stretch=1)
-        self.unit_label.setMinimumSize(50, 30)
+        self.unit_label.setMinimumSize(40, 30)
         layout.addWidget(self.ecdf_btn, stretch=1)
         layout.addWidget(self.kmeans_btn, stretch=1)
-        layout.setContentsMargins(10, 0, 10, 0)
+        layout.setContentsMargins(5, 0, 5, 0)
         self.setLayout(layout)
         for btn in [self.ecdf_btn, self.kmeans_btn]:
-            btn.setFixedWidth(100)
+            btn.setFixedWidth(80)
+            btn.setFixedHeight(30)
             btn.setStyleSheet(
                 """
                 QPushButton {
@@ -218,7 +219,7 @@ class background_value_input_manual(QWidget):
     def initUI(self):
         self.setWindowIcon(AppStyle.icon())
         self.setWindowTitle(self.tr("Background value manual input"))
-        self.resize(600, 400)
+        self.resize(500, 300)
         self.setMinimumSize(500, 300)
 
         self.radon_background_value = indicator_background_value_input(
@@ -240,6 +241,7 @@ class background_value_input_manual(QWidget):
             MIM_indicators.FG, self.result_dict, value_range=999999
         )
         self.value_layout = QVBoxLayout()
+        self.value_layout.setSpacing(5)
         self.value_layout.setContentsMargins(5, 5, 5, 5)
         self.value_layout.addWidget(self.radon_background_value)
         self.value_layout.addWidget(self.VOCs_background_value)
@@ -312,14 +314,23 @@ class function_win(QWidget):
         self.initUI()
 
     def initUI(self):
+        # header = [
+        #     "点位",
+        #     "氡气异常低",
+        #     "VOCs异常高",
+        #     "CO2异常高",
+        #     "O2异常低",
+        #     "CH4异常高",
+        #     "功能基因异常高",
+        # ]
         header = [
-            "点位",
-            "氡气异常低",
-            "VOCs异常高",
-            "CO2异常高",
-            "O2异常低",
-            "CH4异常高",
-            "功能基因异常高",
+            "Point ID",
+            "Abnormally Low Radon",
+            "Abnormally High VOCs",
+            "Abnormally High CO2",
+            "Abnormally Low O2",
+            "Abnormally High CH4",
+            "Abnormally High Functional Genes",
         ]
         # 创建表格视图
         self.table_view = QTableView()

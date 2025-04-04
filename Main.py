@@ -37,7 +37,7 @@ class Start_Window(QWidget):
     def initUI(self):
         self.setWindowIcon(AppStyle.icon())
         self.setWindowTitle(self.tr(Software_info.software_name.value))
-        self.resize(600, 400)
+        self.resize(500, 300)
         self.setMinimumSize(400, 300)
         self.language_switcher = LanguageSwitcher()
         form_layout = QFormLayout()

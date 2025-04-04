@@ -68,7 +68,7 @@ class Attribute_Window(QWidget):
 
     def initUI(self, options):
         self.setWindowTitle(Software_info.software_name.value)
-        self.resize(600, 400)
+        self.resize(500, 300)
         self.setMinimumSize(400, 300)
         self.setWindowIcon(AppStyle.icon())
         self.plot_dataset_info_btn = QPushButton(
@@ -169,14 +169,14 @@ class Contamination_identification_win(QWidget):
         super().__init__()
         self.result_dict = result_dict
         self.result_gdf = result_dict["gdf"]
-        self.outline_dataset = result_dict["outline_dataset"]
+        # self.outline_dataset = result_dict["outline_dataset"]
         self.initUI()
 
     def initUI(self):
         self.setWindowTitle(Software_info.software_name.value)
-        self.resize(600, 300)
-        self.setMinimumSize(400, 200)
         self.setWindowIcon(AppStyle.icon())
+        self.resize(500, 300)
+        # self.setMinimumSize(400, 200)
 
         self.function1_btn = WrapButton_EN(
             self.tr("Pollution exceedance points (except radon gas)")
@@ -220,7 +220,6 @@ class Contamination_identification_win(QWidget):
                 "H2S_Score",
                 "The_other_soil_gas_scores",
             ],
-            outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_PCP,
         )
         self.result_win1.show()
@@ -238,7 +237,6 @@ class Contamination_identification_win(QWidget):
                 "Radon_Score",
                 "All_indicators_Scores",
             ],
-            outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_PSA,
         )
         self.result_win2.show()
@@ -252,7 +250,6 @@ class Contamination_identification_win(QWidget):
                 "The_other_soil_gas_scores",
                 "Scope_of_contamination",
             ],
-            outline_polygon_file=self.outline_dataset,
             funtion_name=Secondary_Functions_of_ExperienceValue.function_SOC,
         )
         self.result_win4.show()
@@ -275,8 +272,10 @@ class Contamination_identification_win(QWidget):
                 doc.save(file_path)
                 QMessageBox.information(
                     self,
-                    "succeed",
-                    "The report has been saved locally and can be opened using WPS or Word!",
+                    self.tr("succeed"),
+                    self.tr(
+                        "The report has been saved locally and can be opened using Word!"
+                    ),
                 )
             except Exception as e:
                 QMessageBox.critical(
@@ -291,15 +290,13 @@ class function_win(QWidget):
         result_dict,
         display_gdf,
         columns_to_display,
-        outline_polygon_file,
         funtion_name,
     ):
         super().__init__()
-        self.setWindowIcon(QIcon(r"./static/icon.ico"))
+        self.setWindowIcon(AppStyle.icon())
         self.result_dict = result_dict
         self.all_gdf = result_dict["gdf"]
         self.gdf = display_gdf[columns_to_display]  #
-        self.outline_polygon_file = outline_polygon_file
         self.function_name = funtion_name
         # 创建表格视图
         self.table_view = QTableView()
@@ -320,7 +317,7 @@ class function_win(QWidget):
         self.plot_button = QPushButton(self.tr("Display plot"))
         self.plot_button.clicked.connect(self.plot_data)
 
-        # 创建导出Shapefile按钮
+        # 创建导出gpkg按钮
         self.export_shp_button = QPushButton(self.tr("Export to GeoPackage"))
         self.export_shp_button.clicked.connect(self.export_to_gpkg)
 
