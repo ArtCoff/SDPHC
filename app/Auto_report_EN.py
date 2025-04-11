@@ -8,141 +8,39 @@ from docx.oxml.ns import qn  # 用于设置中文字体
 # 其他库引用
 from datetime import datetime
 from pathlib import Path
-import geopandas as gpd
 from PIL import Image
-
-# 内部函数引用
-
-
-# def setup_default_styles(doc):
-#     # ================================
-#     # 设置默认正文样式（Normal）
-#     # ================================
-#     normal_style = doc.styles["Normal"]
-#     # 字体设置
-#     normal_style.font.name = "Times New Roman"  # 西文字体
-#     normal_style.font.size = Pt(12)  # 小四号字
-#     normal_style.font.color.rgb = RGBColor(0, 0, 0)
-#     # 中文字体（需操作底层 XML）
-#     rpr = normal_style.element.get_or_add_rPr()
-#     rpr.get_or_add_rFonts().set(qn("w:eastAsia"), "宋体")
-
-#     # 段落格式设置
-#     paragraph_format = normal_style.paragraph_format
-#     paragraph_format.first_line_indent = Cm(0.74)  # 首行缩进 2字符
-#     paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE  # 行距类型
-#     paragraph_format.line_spacing = 1.5  # 1.5倍行距
-#     paragraph_format.space_before = Pt(0)  # 段前间距
-#     paragraph_format.space_after = Pt(0)  # 段后间距
-#     paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
-
-#     # ================================
-#     # 设置标题样式（支持 3 级标题）
-#     # ================================
-#     heading_configs = {
-#         "Heading 1": {
-#             "size": Pt(16),  # 三号字
-#             "bold": True,
-#             "font_en": "Times New Roman",
-#             "font_cn": "黑体",
-#             "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,  # 居中对齐
-#             "line_spacing": 1.5,
-#             "space_before": Pt(24),
-#             "space_after": Pt(12),
-#         },
-#         "Heading 2": {
-#             "size": Pt(15),  # 小三号
-#             "bold": True,
-#             "font_en": "Times New Roman",
-#             "font_cn": "宋体",
-#             "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,  # 左对齐
-#             "line_spacing": 1.0,
-#             "space_before": Pt(18),
-#             "space_after": Pt(6),
-#         },
-#         "Heading 3": {
-#             "size": Pt(14),  # 四号字
-#             "bold": True,
-#             "font_en": "Times New Roman",
-#             "font_cn": "宋体",
-#             "alignment": WD_PARAGRAPH_ALIGNMENT.LEFT,  # 右对齐
-#             "line_spacing": WD_LINE_SPACING.EXACTLY,  # 固定值
-#             "line_spacing_pt": Pt(20),  # 固定 20磅
-#             "space_before": Pt(12),
-#             "space_after": Pt(3),
-#         },
-#     }
-
-#     for style_name, config in heading_configs.items():
-#         heading_style = doc.styles[style_name]
-#         # 字体设置
-#         heading_style.font.size = config["size"]
-#         heading_style.font.bold = config["bold"]
-#         heading_style.font.name = config["font_en"]
-#         # 中文字体
-#         rpr = heading_style.element.get_or_add_rPr()
-#         rpr.get_or_add_rFonts().set(qn("w:eastAsia"), config["font_cn"])
-#         # 段落格式
-#         pf = heading_style.paragraph_format
-#         pf.alignment = config["alignment"]
-#         pf.line_spacing_rule = config.get("line_spacing_rule", WD_LINE_SPACING.MULTIPLE)
-
-#         # 支持固定行距（当 line_spacing_pt 存在时）
-#         if "line_spacing_pt" in config:
-#             pf.line_spacing = config["line_spacing_pt"]
-#             pf.line_spacing_rule = WD_LINE_SPACING.EXACTLY
-
-#         pf.space_before = config["space_before"]
-#         pf.space_after = config["space_after"]
-#         # 特殊设置（如大纲级别）
-# pf.outline_level = getattr(WD_PARAGRAPH_ALIGNMENT, f"HEADING_{style_name[-1]}")
-
-# ================================
-# 新增引用样式（自定义样式）
-# ================================
-# quote_style = doc.styles.add_style("Quote", WD_STYLE_TYPE.PARAGRAPH)
-# quote_style.base_style = doc.styles["Normal"]
-# # 字体设置
-# quote_style.font.italic = True
-# quote_style.font.color.rgb = RGBColor(128, 128, 128)  # 灰色
-# # 段落格式
-# qpf = quote_style.paragraph_format
-# qpf.left_indent = Cm(1.0)  # 左缩进 1厘米
-# qpf.right_indent = Cm(1.0)  # 右缩进 1厘米
-# qpf.line_spacing = 1.25  # 1.25倍行距
-# qpf.shading.background_pattern_color = RGBColor(240, 240, 240)  # 背景色
 
 
 def set_heading_style(heading, level=1):
     # 设置标题的字体和字号
-    run = heading.runs[0]  # 获取标题的第一个 Run 对象
+    run = heading.runs[0]
     if level == 1:
-        run.font.size = Pt(16)  # 设置字号为三号字（16磅）
+        run.font.size = Pt(16)
         run.bold = True  # 设置加粗
-        run.font.name = "Times New Roman"  # 设置字体为黑体
+        run.font.name = "Times New Roman"
         r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "黑体")  # 设置中文为黑体
+        r.rPr.rFonts.set(qn("w:eastAsia"), "黑体")
         run.font.color.rgb = RGBColor(0, 0, 0)
         # 设置段落格式（顶格、左对齐）
-        heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT  # 左对齐
+        heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
     elif level == 2:
         run.font.size = Pt(12)  #
         run.bold = True  # 设置加粗
-        run.font.name = "Times New Roman"  # 设置字体为黑体
+        run.font.name = "Times New Roman"
         r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")  # 设置中文为黑体
+        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")
         run.font.color.rgb = RGBColor(0, 0, 0)
         # 设置段落格式（顶格、左对齐）
-        heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT  # 左对齐
+        heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
     elif level == 3:
         run.font.size = Pt(12)  #
         run.bold = False  # 设置加粗
-        run.font.name = "Times New Roman"  # 设置字体为黑体
+        run.font.name = "Times New Roman"
         r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")  # 设置中文为黑体
+        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")
         run.font.color.rgb = RGBColor(0, 0, 0)
         # 设置段落格式（顶格、左对齐）
-        heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT  # 左对齐
+        heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
 
 def set_paragraph_style(
@@ -259,22 +157,6 @@ def insert_image(doc, image_path, width=None, height=None):
     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # 居中显示图片
 
 
-def apply_heading_style_to_all_titles(doc):
-    """
-    遍历文档中的所有一级标题，应用标题样式。
-
-    :param doc: Document 对象
-    """
-    for paragraph in doc.paragraphs:
-        # 判断该段落是否为一级标题
-        if paragraph.style.name == "Heading 1":  # 默认为一级标题的样式名为 "Heading 1"
-            set_heading_style(paragraph, level=1)  # 设置标题样式
-        elif paragraph.style.name == "Heading 2":
-            set_heading_style(paragraph, level=2)
-        # elif paragraph.style.name == "Normal":
-        #     set_paragraph_style(paragraph)
-
-
 def setup_styles(doc):
     # =====================================
     # 正文样式 (Normal)
@@ -285,7 +167,7 @@ def setup_styles(doc):
     normal_style.font.color.rgb = RGBColor(0, 0, 0)
     # 段落格式
     normal_style.paragraph_format.first_line_indent = Cm(0.74)  # 首行缩进
-    normal_style.paragraph_format.line_spacing = 1.5  # 1.15倍行距
+    normal_style.paragraph_format.line_spacing = 1.15  # 行距
     normal_style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
 
     # =====================================
@@ -296,8 +178,8 @@ def setup_styles(doc):
     list_style.font.color.rgb = RGBColor(0, 0, 0)
     # 段落格式
     list_style.paragraph_format.first_line_indent = Cm(0)  # 首行缩进
-    list_style.paragraph_format.line_spacing = 1.5  # 1.15倍行距
-    list_style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
+    list_style.paragraph_format.line_spacing = 1.15
+    list_style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
 
     # =====================================
     # 标题样式 (Heading 1-3)
@@ -362,7 +244,7 @@ def auto_report_EN():
         i.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     title = doc.add_paragraph()
     title_run = title.add_run(
-        "XXX Petroleum Hydrocarbon Contaminated Site MIM Investigation Report"
+        "XXX Petroleum Hydrocarbon Contaminated Site  Investigation Report Based on Minimally Mnvasive Measurements"
     )
     title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # 居中对齐
     title_run.font.name = "Times New Roman"  # 设置中文字
@@ -392,45 +274,49 @@ def auto_report_EN():
     # 添加分节符
     doc.add_section(WD_SECTION.NEW_PAGE)
 
-    # 添加正文示例
-    doc.add_heading("0 Clarification", level=1)
+    doc.add_heading("1 Guidelines for automated report generation", level=1)
+    doc.add_heading("1.1 Code writing", level=3)
     doc.add_paragraph(
-        "Bound by a confidentiality agreement, this report only provides examples and methods of arrangement, and does not contain real content.",
+        "The code is written in Python, and the report generation is based on the python-docx library. The code is modularized to facilitate maintenance and reuse. The code of Auto_report is divided into three parts: data processing, report generation, and report export.",
     )
     doc.add_paragraph(
-        "Below we show how to insert multi-level headings, paragraphs, tables, images, etc. through a partial demo. Adjust the code according to different needs to generate a report that meets the requirements.",
-    )
-    doc.add_heading("1 Introduction", level=1)
-    doc.add_paragraph(
-        "A complete investigation report typically includes the following components:",
-        style="List",
+        "The data processing part is responsible for reading and processing the data, and generating the required figures.The auto_report_cache folder exists in the installation directory and is used to temporarily save finished drawings or processed data.",
     )
     doc.add_paragraph(
-        "1. Project Background: Brief introduction to the background and objectives of the investigation project",
-        style="List",
+        "The report generation part is responsible for generating the report template and inserting the processed data and images.The code for this section is saved as a separate python file that can be called from the software GUI page and new templates are constantly being written for specific needs.",
     )
     doc.add_paragraph(
-        "2. Field Investigation: Description of the basic site conditions, investigation methods, and investigation results",
-        style="List",
+        "The report export part is responsible for exporting the generated report to a Word document.Usually, the code for the report export section is fixed and only requires a call to the System Resource Manager in the software.",
+    )
+    doc.add_heading("1.2 Basic format control", level=2)
+    doc.add_paragraph(
+        "The report is generated in Word format and the basic format is controlled by the python-docx library.For example, the body of the font Times New Roman, font size of 12 pounds, color black, line spacing is 1.5 times, the first line indented 2 characters, alignment is aligned at both ends. The way to control by code is:"
     )
     doc.add_paragraph(
-        "3. Data Analysis: Evaluation and analysis of investigation data to identify pollution source areas and contaminant plumes",
-        style="List",
-    )
-    doc.add_paragraph(
-        "4. Result Presentation: Display of investigation results through diagrams, tables, and other visual formats",
-        style="List",
-    )
-    doc.add_paragraph(
-        "5. Conclusion and Recommendations: Summary of investigation findings and proposals for follow-up actions",
-        style="List",
+        "For example, the body of the font Times New Roman, font size of 12 pounds, color black, line spacing is 1.5 times, the first line indented 2 characters, alignment is aligned at both ends. The way to control by code is:"
     )
 
-    doc.add_heading("2 Adding different levels of headings", level=1)
-    doc.add_heading("2.1 Secondary headings", level=2)
-    doc.add_heading("2.1.1 Tertiary heading", level=3)
-
+    code = """normal_style = doc.styles["Normal"]\nnormal_style.font.name = "Times New Roman"\nnormal_style.font.size = Pt(12)\nnormal_style.font.color.rgb = RGBColor(0, 0, 0)\nnormal_style.paragraph_format.first_line_indent = Cm(0.74)\nnormal_style.paragraph_format.line_spacing = 1.5\nnormal_style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY"""
+    paragraph = doc.add_paragraph()
+    run = paragraph.add_run(code)
+    run.font.name = "Courier New"  # 设置字体为等宽字体
+    run.font.size = Pt(10)  # 设置字号为10磅
+    run.font.color.rgb = RGBColor(0, 0, 0)  #
+    paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT  # 段落级设置
+    paragraph.paragraph_format.first_line_indent = Pt(0)  # 段落级设置
+    paragraph.paragraph_format.line_spacing = 1  # 段落级设置
     # 填充表格
+    doc.add_heading("1.3 Table and figure generation", level=2)
+    doc.add_paragraph(
+        "The table and figure generation is based on the add_table and add_picture functions, which provide a simple and easy-to-use interface for generating tables and figures.",
+    )
+    doc.add_paragraph(
+        "However, the python-docx library has some limitations on the insertion of tables and images: it only provides the most direct way of insertion, and personalization requires the writing of more complex code that needs to manipulate the underlying XML.",
+    )
+    doc.add_paragraph(
+        "The following is an example of inserting a customized table (the data used are randomly generated and have no practical significance):"
+    )
+
     import random
 
     table_header = [
@@ -442,45 +328,19 @@ def auto_report_EN():
         "CH4(%)",
         "FG(copies/g)",
     ]
-    add_table_header(doc, "Table4-1 Microperturbation survey site data")
-    table = doc.add_table(rows=7, cols=15)
+    add_table_header(doc, "Table1-1 Microperturbation survey site data")
+    table = doc.add_table(rows=6, cols=len(table_header))
     table.style = "Table Grid"
     for i, col_name in enumerate(table_header):
         table.cell(0, i).text = col_name
-        for j in range(1, 15):
-            table.cell(0, j).text = str(random.randint(10, 100))
+        for j in range(1, 6):
+            table.cell(j, i).text = str(random.randint(10, 100))
+
+    # set picture
+    doc.add_paragraph()
+    doc.add_paragraph("The following is an example of inserting a group of pictures:")
 
     all_image_paths = [
-        "./auto_report_cache/KMEANS-Radon.png",
-        "./auto_report_cache/KMEANS-VOCs.png",
-        "./auto_report_cache/KMEANS-CH4.png",
-        "./auto_report_cache/KMEANS-CO2.png",
-        "./auto_report_cache/KMEANS-O2.png",
-        "./auto_report_cache/KMEANS-FG.png",
-    ]
-    image_paths = []
-    for path in all_image_paths:
-        if Path(path).exists():
-            image_paths.append(path)
-    # 计算表格的行数
-    print(image_paths)
-    rows = (len(image_paths) + 2 - 1) // 2
-
-    # 创建表格
-    table = doc.add_table(rows=rows, cols=2)
-
-    # 填充表格单元格
-    for i, image_path in enumerate(image_paths):
-        row = i // 2
-        col = i % 2
-        cell = table.cell(row, col)
-        if Path(image_path).exists():
-            cell.paragraphs[0].add_run().add_picture(image_path, width=Inches(2))
-        else:
-            cell.add_paragraph()
-    labels = ["氡气", "VOCs", "CO2", "O2", "CH4", "功能基因"]
-    all_image_paths = [
-        "./auto_report_cache/Rn.png",
         "./auto_report_cache/VOCs.png",
         "./auto_report_cache/CH4.png",
         "./auto_report_cache/CO2.png",
@@ -507,8 +367,7 @@ def auto_report_EN():
             cell.paragraphs[0].add_run().add_picture(image_path, width=Inches(2))
         else:
             cell.add_paragraph()
-    doc.add_paragraph("")
-
+    add_pic_header(doc, "Figure 1-1 Example of inserting a group of pictures")
     # 应用样式
     return doc
 

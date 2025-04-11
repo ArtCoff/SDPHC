@@ -146,33 +146,32 @@ class background_value_input_doublespinbox(QDoubleSpinBox):
 
 
 class CustomRadioButtons(QWidget):
-    current_method = Signal(Enum)
 
     def __init__(self):
         super().__init__()
-        self.radiobutton1 = QRadioButton("Experience value method")
-        self.radiobutton2 = QRadioButton("Background value method")
-        self.radiobutton3 = QRadioButton("PCA method")
+
+        self.radiobutton1 = QRadioButton(self.tr("Empirical Threshold Analysis"))
+        self.radiobutton2 = QRadioButton(self.tr("Background Value Analysis"))
+        self.radiobutton3 = QRadioButton(self.tr("Principal Component Analysis"))
         self.radiobutton1.setChecked(True)
+        self.current_method = Methods.Empirical_Threshold_Analysis
         self.radiobutton1.toggled.connect(self.on_radio_button_toggled)
         self.radiobutton2.toggled.connect(self.on_radio_button_toggled)
         self.radiobutton3.toggled.connect(self.on_radio_button_toggled)
-        # hlayout = QHBoxLayout()
-        # hlayout.addWidget(self.radiobutton1)
-        # hlayout.addWidget(self.radiobutton2)
-        # hlayout.addWidget(self.radiobutton3)
         grid = QGridLayout()
         grid.addWidget(self.radiobutton1, 0, 0)
         grid.addWidget(self.radiobutton2, 0, 1)
         grid.addWidget(self.radiobutton3, 1, 0)
         self.setLayout(grid)
-        # self.setLayout(hlayout)
 
     def on_radio_button_toggled(self):
         radiobutton = self.sender()
         if radiobutton.isChecked():
-            print(type(Methods(radiobutton.text())))
-            self.current_method.emit(Methods(radiobutton.text()))
+            self.current_method = Methods(radiobutton.text())
+
+    @property
+    def get_method(self):
+        return self.current_method
 
 
 class WrapButton(QPushButton):

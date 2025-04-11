@@ -1,8 +1,6 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-
-import numpy as np
 import matplotlib
 
 matplotlib.use("QtAgg")
@@ -1104,6 +1102,14 @@ def backgroundValue_anomaly_fig(
     ax.legend(
         handles=legend_elements,
     )
+    #
+    # fig.savefig(
+    #     Path("./auto_report_cache") / f"{label}.png",
+    #     dpi=300,
+    #     bbox_inches="tight",
+    #     pad_inches=0.1,
+    # )
+    #
     return fig
 
 
@@ -1512,86 +1518,22 @@ def idw_interpolation(x, y, z, grid_x, grid_y, power=2):
 
 
 def add_common_elements(ax, boundary_gdf, points_gdf):
-    boundary_gdf.plot(ax=ax, color="none", edgecolor="red", linewidth=2)
-    ax.scatter(points_gdf.geometry.x, points_gdf.geometry.y, c="black", marker="x", s=2)
-    ax.set_xlabel("Longitude")
-    ax.set_ylabel("Latitude")
-
-
-# 定义绘图函数
-# def plot_PC1_interpolation(
-#     boundary_gdf,
-#     points_gdf,
-#     interpolation_method,
-#     pca_scores,
-# ):
-#     # 提取插值点坐标
-#     x = points_gdf.geometry.x
-#     y = points_gdf.geometry.y
-#     z = pca_scores["PC1"].values  # PCA得分
-#     grid_x, grid_y = np.mgrid[
-#         min(x) - 0.001 : max(x) + 0.001 : 100j, min(y) - 0.001 : max(y) + 0.001 : 100j
-#     ]
-#     fig = Figure(figsize=(8, 6), dpi=150)
-#     ax = fig.add_subplot(111)
-
-#     if interpolation_method == "Nearest":
-
-#         cmap = "gist_rainbow"
-#         grid_z_nearest = scipy_interpolation(x, y, z, grid_x, grid_y, method="nearest")
-#         # 绘制最近邻插值结果
-#         contour_nearest = ax.contourf(
-#             grid_x, grid_y, grid_z_nearest, cmap="coolwarm", levels=10
-#         )
-#         fig.colorbar(
-#             contour_nearest,
-#             ax=ax,
-#             label="PC1(Nearest)",
-#         )
-#         ax.set_title("Spatial distribution of contamination(Nearest interpolation)")
-#         add_common_elements(ax, boundary_gdf, points_gdf)
-#         return fig
-
-#     elif interpolation_method == "Cubic":
-#         # 绘制立方插值结果
-#         add_common_elements(ax, boundary_gdf, points_gdf)
-#         grid_z_cubic = scipy_interpolation(x, y, z, grid_x, grid_y, method="cubic")
-#         # 绘制最近邻插值结果
-#         contour_cubic = ax.contourf(
-#             grid_x, grid_y, grid_z_cubic, cmap="coolwarm", levels=10
-#         )
-#         fig.colorbar(contour_cubic, ax=ax, label="PC1(Cubic)")
-#         ax.set_title("Spatial distribution of contamination(Cubic interpolation)")
-#         add_common_elements(ax, boundary_gdf, points_gdf)
-#         return fig
-#     elif interpolation_method == "IDW":
-#         add_common_elements(ax, boundary_gdf, points_gdf)
-#         grid_z_idw = idw_interpolation(
-#             x, y, z, grid_x, grid_y, power=2
-#         )  # 使用默认幂次2进行IDW插值
-#         contour_idw = ax.contourf(grid_x, grid_y, grid_z_idw, cmap="jet", levels=10)
-#         fig.colorbar(contour_idw, ax=ax, label="PC1(IDW)")
-#         ax.set_title("Spatial distribution of contamination(IDW interpolation)")
-#         add_common_elements(ax, boundary_gdf, points_gdf)
-#         return fig
-
-#     elif interpolation_method == "Kriging":
-#         add_common_elements(ax, boundary_gdf, points_gdf)
-#         # 绘制克里金插值结果
-#         grid_z_kriging = kriging_interpolation(
-#             x,
-#             y,
-#             z,
-#             np.linspace(min(x) - 0.001, max(x) + 0.001, 100),
-#             np.linspace(min(y) - 0.001, max(y) + 0.001, 100),
-#         )
-#         contour_kriging = ax.contourf(
-#             grid_x, grid_y, grid_z_kriging, cmap="gist_rainbow", levels=10
-#         )
-#         fig.colorbar(contour_kriging, ax=ax, label="PC1(Kriging)")
-#         ax.set_title("Spatial distribution of contamination(Kriging interpolation)")
-#         add_common_elements(ax, boundary_gdf, points_gdf)
-#         return fig
+    boundary_gdf.plot(
+        ax=ax, color="none", edgecolor="black", linewidth=2, label="Boundary"
+    )
+    ax.scatter(
+        points_gdf.geometry.x,
+        points_gdf.geometry.y,
+        c="black",
+        marker=".",
+        s=2,
+        label="Monitoring Points",
+    )
+    add_north_arrow(ax)
+    add_scalebar(ax, location="lower left")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.legend(fontsize=10)
 
 
 def plot_PC1_score(
@@ -1661,7 +1603,7 @@ def plot_PC1_interpolation(
     x = points_gdf.geometry.x
     y = points_gdf.geometry.y
     z = points_gdf["PC1"].values
-
+    # "gist_rainbow"
     # 创建网格
     grid_x, grid_y = np.mgrid[
         min(x) - 0.001 : max(x) + 0.001 : 100j, min(y) - 0.001 : max(y) + 0.001 : 100j
@@ -1680,9 +1622,9 @@ def plot_PC1_interpolation(
         grid_z = griddata((x, y), z, (grid_x, grid_y), method="nearest")
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
 
-        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="coolwarm", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1 (Nearest)")
-        ax.set_title("Nearest Neighbor Interpolation")
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
+        fig.colorbar(contour, ax=ax, label="PC1(Nearest)")
+        # ax.set_title("Nearest Neighbor Interpolation")
 
     elif interpolation_method == "Cubic":
         from scipy.interpolate import griddata
@@ -1690,17 +1632,17 @@ def plot_PC1_interpolation(
         grid_z = griddata((x, y), z, (grid_x, grid_y), method="cubic")
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
 
-        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="coolwarm", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1 (Cubic)")
-        ax.set_title("Cubic Interpolation")
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
+        fig.colorbar(contour, ax=ax, label="PC1(Cubic)")
+        # ax.set_title("Cubic Interpolation")
 
     elif interpolation_method == "IDW":
         grid_z = idw_interpolation(x, y, z, grid_x, grid_y, power=2)
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
 
         contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1 (IDW)")
-        ax.set_title("Inverse Distance Weighting Interpolation")
+        fig.colorbar(contour, ax=ax, label="PC1(IDW)")
+        # ax.set_title("Inverse Distance Weighting Interpolation")
 
     elif interpolation_method == "Kriging":
         # grid_z = kriging_interpolation(x, y, z, grid_x, grid_y)
@@ -1713,12 +1655,19 @@ def plot_PC1_interpolation(
         )
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
 
-        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="gist_rainbow", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1 (Kriging)")
-        ax.set_title("Kriging Interpolation")
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
+        fig.colorbar(contour, ax=ax, label="PC1(Kriging)")
+        # ax.set_title("Kriging Interpolation")
 
     # 添加公共元素
     add_common_elements(ax, boundary_gdf, points_gdf)
+    fig.savefig(
+        f"./auto_report_cache/{interpolation_method}.png",
+        dpi=900,
+        bbox_inches="tight",
+        pad_inches=0.1,
+    )
+
     return fig
 
 

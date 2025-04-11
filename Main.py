@@ -28,9 +28,9 @@ class Start_Window(QWidget):
         super(Start_Window, self).__init__(parent)
         self.initUI()
         self.attribute_window_factory = {
-            Methods.Experience_value_method: Attribute_Window,
-            Methods.Background_value_method: Attribute_Window_BackgroundValue,
-            Methods.PCA_method: Attribute_Window_PCA,
+            Methods.Empirical_Threshold_Analysis: Attribute_Window,
+            Methods.Background_Value_Analysis: Attribute_Window_BackgroundValue,
+            Methods.Principal_Component_Analysis: Attribute_Window_PCA,
         }
         self.current_attribute_window = None
 
@@ -44,8 +44,7 @@ class Start_Window(QWidget):
         self.outline_dataset = file_line_edit()
         self.point_dataset = file_line_edit()
         self.method = CustomRadioButtons()
-        self.current_method_status = Methods.Experience_value_method
-        self.method.current_method.connect(self.update_method)
+
         #!
         self.outline_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\boundary.gpkg")
         self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\Lanxing.gpkg")
@@ -79,7 +78,7 @@ class Start_Window(QWidget):
 
     def on_help_clicked(self):
         msg_box = QMessageBox(self)
-        # msg_box.setIcon(QMessageBox.Information)
+        msg_box.setIcon(QMessageBox.Information)
         msg_box.setWindowTitle(self.tr("Help"))  # 设置标题
         msg_box.setText(
             self.tr(
@@ -103,7 +102,7 @@ class Start_Window(QWidget):
             )
             return
         attribute_window_class = self.attribute_window_factory.get(
-            self.current_method_status
+            self.method.get_method
         )
         if not attribute_window_class:
             QMessageBox.critical(self, "Error", "Unsupported method selected")
@@ -111,7 +110,7 @@ class Start_Window(QWidget):
         attribute_window_args = {
             "point_dataset": self.point_dataset.text(),
             "outline_dataset": self.outline_dataset.text(),
-            "method": self.current_method_status,
+            "method": self.method.get_method,
         }
         # 如果当前有窗口打开，关闭当前窗口
         if self.current_attribute_window:
@@ -120,8 +119,8 @@ class Start_Window(QWidget):
         self.current_attribute_window.show()
         self.close()
 
-    def update_method(self, method):
-        self.current_method_status = method
+    # def update_method(self, method):
+    #     self.current_method_status = method
 
 
 if __name__ == "__main__":

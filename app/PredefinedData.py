@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Software_info(Enum):
-    software_name = "MIM LNAP Pollution Aid Identification Software"
+    software_name = "SDPHC"
     software_version = "1.0.0"
     software_author = "Hefei University of Technology"
     software_email = ""
@@ -14,9 +14,9 @@ class Drawing_specifications:
 
 
 class Methods(Enum):
-    Experience_value_method = "Experience value method"
-    Background_value_method = "Background value method"
-    PCA_method = "PCA method"
+    Empirical_Threshold_Analysis = "Empirical Threshold Analysis"
+    Background_Value_Analysis = "Background Value Analysis"
+    Principal_Component_Analysis = "Principal Component Analysis"
 
 
 class Secondary_Functions_of_ExperienceValue(Enum):

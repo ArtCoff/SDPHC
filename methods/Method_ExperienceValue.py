@@ -159,7 +159,7 @@ class Attribute_Window(QWidget):
         return final_combos
 
     def method_control_combos(self, method):
-        if method == Methods.Experience_value_method:
+        if method == Methods.Empirical_Threshold_Analysis:
             self.combos[-1].setEnabled(False)
 
 
