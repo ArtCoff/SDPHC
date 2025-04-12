@@ -37,25 +37,25 @@ class Start_Window(QWidget):
     def initUI(self):
         self.setWindowIcon(AppStyle.icon())
         self.setWindowTitle(self.tr(Software_info.software_name.value))
-        self.resize(500, 300)
+        self.resize(600, 300)
         self.setMinimumSize(400, 300)
-        self.language_switcher = LanguageSwitcher()
-        form_layout = QFormLayout()
+
+        self.help_btn = help_btn()
+        self.next_btn = next_btn()
         self.outline_dataset = file_line_edit()
         self.point_dataset = file_line_edit()
-        self.method = CustomRadioButtons()
+        self.method_radiobtns = CustomRadioButtons()
+        self.language_switcher = LanguageSwitcher()
 
         #!
         self.outline_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\boundary.gpkg")
         self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\Lanxing.gpkg")
 
         #!
-
-        self.help_btn = help_btn()
-        self.next_btn = next_btn()
-        form_layout.addRow(self.tr("Site boundary file:"), self.outline_dataset)
-        form_layout.addRow(self.tr("Survey site file:"), self.point_dataset)
-        form_layout.addRow(self.tr("Method:"), self.method)
+        form_layout = QFormLayout()
+        form_layout.addRow(self.tr("Boundary File:"), self.outline_dataset)
+        form_layout.addRow(self.tr("Survey File:"), self.point_dataset)
+        form_layout.addRow(self.tr("Analysis Methods:"), self.method_radiobtns)
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(
             self.language_switcher, alignment=Qt.AlignTop | Qt.AlignLeft
@@ -97,12 +97,12 @@ class Start_Window(QWidget):
         if not self.point_dataset.text():
             QMessageBox.critical(
                 self,
-                self.tr("Dataset Error"),
+                self.tr("Data Error"),
                 self.tr("Survey point data should not be empty."),
             )
             return
         attribute_window_class = self.attribute_window_factory.get(
-            self.method.get_method
+            self.method_radiobtns.get_method
         )
         if not attribute_window_class:
             QMessageBox.critical(self, "Error", "Unsupported method selected")
@@ -110,7 +110,7 @@ class Start_Window(QWidget):
         attribute_window_args = {
             "point_dataset": self.point_dataset.text(),
             "outline_dataset": self.outline_dataset.text(),
-            "method": self.method.get_method,
+            "method": self.method_radiobtns.get_method,
         }
         # 如果当前有窗口打开，关闭当前窗口
         if self.current_attribute_window:
@@ -118,9 +118,6 @@ class Start_Window(QWidget):
         self.current_attribute_window = attribute_window_class(**attribute_window_args)
         self.current_attribute_window.show()
         self.close()
-
-    # def update_method(self, method):
-    #     self.current_method_status = method
 
 
 if __name__ == "__main__":
