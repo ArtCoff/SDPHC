@@ -1,29 +1,23 @@
 from PySide6.QtCore import Signal, QThread, Slot, Qt
-
 from PySide6.QtWidgets import (
     QMessageBox,
-    QSplitter,
     QWidget,
     QFileDialog,
-    QPushButton,
     QVBoxLayout,
     QHBoxLayout,
-    QSizePolicy,
 )
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-from app.PredefinedData import Software_info
-from app.CustomControl import (
-    help_btn,
-    check_btn,
+from utils.predefined_data import Software_info
+from gui.empirical_threshold_analysis import Attribute_Window
+from gui.custom_controls import (
     Interpolation_method_selection,
     LoadingWindow,
-    WrapButton_EN,
+    WrapButton,
 )
-from app.Pyside6Functions import center_window, show_multiple_plots, AppStyle
-from app.Method_Functions import return_PCA_results
-from methods.Method_ExperienceValue import Attribute_Window
+from utils.pyside6_utils import center_window, show_multiple_plots, AppStyle
+from core.principal_component_functions import return_PCA_results
 
 
 class PCA_worker(QThread):
@@ -93,12 +87,10 @@ class PCA_function_win(QWidget):
         self.setMinimumSize(400, 200)
         self.setWindowIcon(AppStyle.icon())
 
-        self.analysis_btn = WrapButton_EN(self.tr("View graph of PCA analysis results"))
-        self.point_btn = WrapButton_EN(self.tr("View PC1 point distribution"))
-        self.interpolation_btn = WrapButton_EN(
-            self.tr("View PC1 interpolation results")
-        )
-        self.export_btn = WrapButton_EN(
+        self.analysis_btn = WrapButton(self.tr("View graph of PCA analysis results"))
+        self.point_btn = WrapButton(self.tr("View PC1 point distribution"))
+        self.interpolation_btn = WrapButton(self.tr("View PC1 interpolation results"))
+        self.export_btn = WrapButton(
             self.tr("Export vector results (including principal component scores)")
         )
 

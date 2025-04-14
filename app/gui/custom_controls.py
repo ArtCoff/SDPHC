@@ -23,10 +23,14 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QProgressBar,
 )
-from app.PredefinedData import Methods
+from utils.predefined_data import Methods
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from app.Pyside6Functions import center_window, load_settings, update_config_value
+from utils.pyside6_utils import (
+    center_window,
+    load_settings,
+    update_config_value,
+)
 
 
 class file_line_edit(QLineEdit):
@@ -128,14 +132,6 @@ class CustomComboBox(QComboBox):
             self.setCurrentIndex(index)
         else:
             self.setCurrentIndex(0)
-        # if self.attribute == "Point_ID":
-        #     self.setCurrentIndex(1)
-        # else:
-        #     if self.attribute.value.name in self.options:
-        #         index = self.options.index(self.attribute.value.name) + 1
-        #         self.setCurrentIndex(index)
-        #     else:
-        #         self.setCurrentIndex(0)
 
 
 class background_value_input_doublespinbox(QDoubleSpinBox):
@@ -175,21 +171,6 @@ class CustomRadioButtons(QWidget):
 
 
 class WrapButton(QPushButton):
-    def __init__(self, text, parent=None):
-        super().__init__(parent)
-
-        # 创建一个 QLabel 来承载按钮的文本
-        label = QLabel(text)
-        label.setWordWrap(True)
-        label.setAlignment(Qt.AlignCenter)
-
-        # 创建一个布局来放置 QLabel
-        layout = QVBoxLayout(self)
-        layout.addWidget(label)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-
-class WrapButton_EN(QPushButton):
     def __init__(self, text, parent=None):
         super().__init__(parent)
 
@@ -391,7 +372,7 @@ class LoadingWindow(QWidget):
 class PlotWindow(QWidget):
     def __init__(self, fig):
         super().__init__()
-        from app.Pyside6Functions import AppStyle
+        from app.utils.pyside6_utils import AppStyle
 
         self.setWindowTitle("Data Visualization")
         self.resize(800, 600)

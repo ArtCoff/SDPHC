@@ -11,26 +11,28 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
 )
-from methods.Method_ExperienceValue import Attribute_Window
-from app.Method_Functions import (
+from gui.empirical_threshold_analysis import Attribute_Window
+from core.function_utils import (
     read_file_columns,
     point_dataset_preprocess,
+)
+from core.background_value_functions import (
     process_background_value_method,
     calculate_backgroundValue,
 )
-from app.PredefinedData import Software_info, MIM_indicators
-from app.CustomControl import (
+from utils.predefined_data import Software_info, MIM_indicators
+from gui.custom_controls import (
     background_value_input_doublespinbox,
     bottom_buttons,
     LoadingWindow,
 )
-from app.Pyside6Functions import (
+from utils.pyside6_utils import (
     AppStyle,
     center_window,
     traverse_layout,
     show_multiple_plots,
 )
-from app.Auto_report_EN import auto_report_EN as auto_report
+from core.auto_report_EN import auto_report_EN as auto_report
 
 
 class backgroundValue_worker(QThread):
@@ -411,7 +413,7 @@ class function_win(QWidget):
                 )
 
     def plot_data(self):
-        from app.Pyside6Functions import show_multiple_plots
+        from app.utils.pyside6_utils import show_multiple_plots
 
         figs = []
         for indicator, fig in self.result_dict.get("anomaly_figs"):

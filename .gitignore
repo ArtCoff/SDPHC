@@ -2,9 +2,7 @@
 *.log
 *.ts
 
-# 忽略特定文件夹（如 node_modules 和 build）
-node_modules/
-build/
+# 忽略特定文件夹
 __pycache__/
 .vscode/
 auto_report_cache/

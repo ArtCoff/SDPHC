@@ -1,5 +1,5 @@
 import re
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QLayoutItem,
     QWidget,
 )
+from pathlib import Path
 
 
 class AppStyle:
@@ -21,34 +22,6 @@ class AppStyle:
     @staticmethod
     def body():
         return QFont("Segoe UI", 10)
-
-
-# 读取配置文件 settings.txt 的函数
-def load_settings():
-    """
-    从 settings.txt 文件中读取配置参数。
-    :return: 配置字典
-    """
-    import os
-
-    settings = {}
-    settings_path = os.path.abspath("settings.txt")  # 获取根目录下的 settings.txt
-    if not os.path.exists(settings_path):
-        print("配置文件 settings.txt 不存在，使用默认值。")
-        return settings
-
-    with open(settings_path, "r", encoding="utf-8") as file:
-        for line in file:
-            line = line.strip()
-            if line and not line.startswith("#"):  # 跳过注释和空行
-                try:
-                    key, value = line.split("=", 1)  # 分割键值对
-                    key = key.strip().strip('"')  # 去除多余的引号和空格
-                    value = value.strip().strip('"')
-                    settings[key] = value
-                except ValueError:
-                    print(f"忽略无效配置行：{line}")
-    return settings
 
 
 def center_window(window):
@@ -91,7 +64,7 @@ def show_multiple_plots(figs):
     :param figs: list[Figure]
     """
     from matplotlib.figure import Figure
-    from app.CustomControl import PlotWindow
+    from app.gui.custom_controls import PlotWindow
     from copy import deepcopy
 
     figs = deepcopy(figs)
@@ -108,7 +81,6 @@ def show_multiple_plots(figs):
         # 偏移窗口位置避免完全重叠
         if i > 0:
             window.move(window.x() + 30 * i, window.y() + 30 * i)
-        # *
         window.setAttribute(Qt.WA_DeleteOnClose)  # 确保窗口关闭时自动销毁
         window.destroyed.connect(
             lambda obj, w=window: app.windows.remove(w) if w in app.windows else None
@@ -120,6 +92,32 @@ def show_multiple_plots(figs):
     app.exec()
 
 
+# 读取配置文件 settings.txt 的函数
+def load_settings():
+    """
+    从 settings.txt 文件中读取配置参数。
+    :return: 配置字典
+    """
+    settings = {}
+    settings_path = Path("settings.txt").resolve()  # 获取根目录下的 settings.txt
+    if not settings_path.exists():
+        print("配置文件 settings.txt 不存在，使用默认值。")
+        return settings
+
+    with settings_path.open("r", encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+            if line and not line.startswith("#"):  # 跳过注释和空行
+                try:
+                    key, value = line.split("=", 1)  # 分割键值对
+                    key = key.strip().strip('"')  # 去除多余的引号和空格
+                    value = value.strip().strip('"')
+                    settings[key] = value
+                except ValueError:
+                    print(f"忽略无效配置行：{line}")
+    return settings
+
+
 def update_config_value(key, new_value, backup=False):
     """
     修改配置文件中指定键的值，支持字符串、数字等类型。
@@ -129,15 +127,13 @@ def update_config_value(key, new_value, backup=False):
     :param new_value: 新值（自动处理引号）
     :param backup: 是否备份原文件（默认 True）
     """
-    import os
-
     # 正则表达式匹配模式：键值对格式如 "KEY"="VALUE"
     pattern = re.compile(rf'^"{key}"\s*=\s*(".*?"|\S+)', re.IGNORECASE)
     lines = []
     updated = False
-    file_path = os.path.abspath("settings.txt")
+    file_path = Path("settings.txt").resolve()
     # 读取文件并逐行处理
-    with open(file_path, "r", encoding="utf-8") as f:
+    with file_path.open("r", encoding="utf-8") as file:
         for line in f:
             # 匹配目标键
             match = pattern.match(line.strip())
@@ -164,5 +160,5 @@ def update_config_value(key, new_value, backup=False):
         shutil.copy2(file_path, file_path + ".bak")
 
     # 写入修改后的内容
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
+    with file_path.open("w", encoding="utf-8") as file:
+        file.writelines(lines)

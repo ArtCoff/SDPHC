@@ -1,9 +1,7 @@
 import sys
 from enum import Enum
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal, Slot, QThreadPool, QThread
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtCore import Signal, Slot, QThread
 from PySide6.QtWidgets import (
-    QApplication,
     QMessageBox,
     QTableView,
     QWidget,
@@ -14,28 +12,27 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGridLayout,
 )
-from app.Method_Functions import (
+from core.function_utils import (
     plot_basic_info,
     read_file_columns,
-    calculate_ExperienceValueMethod_scores,
 )
-from app.PredefinedData import (
+from core.empirical_threshold_functions import calculate_ExperienceValueMethod_scores
+from utils.predefined_data import (
     Software_info,
     MIM_indicators,
     Methods,
     Secondary_Functions_of_ExperienceValue,
 )
-from app.CustomControl import (
+from gui.custom_controls import (
     next_btn,
     help_btn,
+    WrapButton,
     CustomComboBox,
-    # WrapButton,
-    WrapButton_EN,
     GeoDataFrameModel,
     bottom_buttons,
     LoadingWindow,
 )
-from app.Pyside6Functions import center_window, show_multiple_plots, AppStyle
+from utils.pyside6_utils import center_window, show_multiple_plots, AppStyle
 
 
 class worker(QThread):
@@ -178,15 +175,15 @@ class Contamination_identification_win(QWidget):
         self.resize(500, 300)
         # self.setMinimumSize(400, 200)
 
-        self.function1_btn = WrapButton_EN(
+        self.function1_btn = WrapButton(
             self.tr("Pollution exceedance points (except radon gas)")
         )
-        self.function2_btn = WrapButton_EN(
+        self.function2_btn = WrapButton(
             self.tr("Pollution source area and suspected pollution source area")
         )
-        self.function4_btn = WrapButton_EN(self.tr("Scope of contamination"))
-        self.function5_btn = WrapButton_EN(self.tr("Pollution level identification"))
-        self.auto_report_btn = WrapButton_EN(self.tr("Auto report"))
+        self.function4_btn = WrapButton(self.tr("Scope of contamination"))
+        self.function5_btn = WrapButton(self.tr("Pollution level identification"))
+        self.auto_report_btn = WrapButton(self.tr("Auto report"))
 
         # 功能连接
         self.function1_btn.clicked.connect(self.function_PCP)
@@ -258,7 +255,7 @@ class Contamination_identification_win(QWidget):
         show_multiple_plots(self.result_dict.get("pollution_level_fig"))
 
     def auto_report(self):
-        from app.Auto_report_EN import auto_report_EN as Auto_report
+        from core.auto_report_EN import auto_report_EN as Auto_report
 
         doc = Auto_report()
         file_path, _ = QFileDialog.getSaveFileName(

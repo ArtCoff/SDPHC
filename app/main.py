@@ -9,23 +9,23 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QFormLayout,
 )
-from app.PredefinedData import Software_info, Methods
-from app.Pyside6Functions import AppStyle, center_window, load_settings
-from app.CustomControl import (
+from utils.predefined_data import Software_info, Methods
+from utils.pyside6_utils import AppStyle, center_window, load_settings
+from gui.custom_controls import (
     file_line_edit,
     next_btn,
     help_btn,
     CustomRadioButtons,
     LanguageSwitcher,
 )
-from methods.Method_ExperienceValue import Attribute_Window
-from methods.Method_BackgroundValue import Attribute_Window_BackgroundValue
-from methods.Method_PCA import Attribute_Window_PCA
+from gui.empirical_threshold_analysis import Attribute_Window
+from gui.background_value_analysis import Attribute_Window_BackgroundValue
+from gui.principal_component_analysis import Attribute_Window_PCA
 
 
-class Start_Window(QWidget):
+class start_window(QWidget):
     def __init__(self, parent=None):
-        super(Start_Window, self).__init__(parent)
+        super(start_window, self).__init__(parent)
         self.initUI()
         self.attribute_window_factory = {
             Methods.Empirical_Threshold_Analysis: Attribute_Window,
@@ -131,13 +131,13 @@ if __name__ == "__main__":
     # 国际化
     trans = QTranslator()
     lang = settings.get("DEFAULT_LANG", "en_US")
-    trans.load(f"./locales/{lang}.qm")
+    trans.load(f"./assets/locales/{lang}.qm")
     app.installTranslator(trans)
 
     # 正确获取主屏幕
     font_family = settings.get("FONT_FAMILY", "Arial")
     font_size = int(settings.get("FONT_SIZE", "12"))
     app.setFont(QFont(font_family, font_size))
-    main = Start_Window()
+    main = start_window()
     main.show()
     sys.exit(app.exec())
