@@ -1,14 +1,60 @@
-from docx import Document
-from docx.shared import Inches, Pt, Cm, RGBColor
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
-
-from docx.enum.section import WD_SECTION
-from docx.oxml.ns import qn  # 用于设置中文字体
-
-# 其他库引用
+import os
+import psutil
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
+from docx import Document
+from docx.shared import Inches, Pt, Cm, RGBColor
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
+from docx.enum.section import WD_SECTION
+from docx.oxml.ns import qn
+
+
+def is_file_locked(file_path):
+    """检测文件是否被其他进程占用"""
+    try:
+        # 尝试以只读模式打开文件
+        with open(file_path, "r"):
+            pass
+        return False
+    except IOError:
+        return True
+
+
+def find_and_kill_file_handles(file_path):
+    """查找并终止占用文件的进程"""
+    for proc in psutil.process_iter(["pid", "name", "open_files"]):
+        try:
+            if proc.info["open_files"]:
+                for file in proc.info["open_files"]:
+                    if file.path == os.path.abspath(file_path):
+                        print(f"发现占用进程: {proc.info['name']} (PID: {proc.pid})")
+                        try:
+                            p = psutil.Process(proc.pid)
+                            p.terminate()
+                            p.wait(timeout=3)
+                            print(f"已终止进程 PID {proc.pid}")
+                        except psutil.NoSuchProcess:
+                            print(f"进程 {proc.pid} 已不存在")
+                        except Exception as e:
+                            print(f"终止进程失败: {e}")
+        except psutil.NoSuchProcess:
+            continue
+
+
+def save_docx_safely(doc, file_path):
+    """安全保存 docx 文件，自动处理文件占用问题"""
+    if os.path.exists(file_path):
+        if is_file_locked(file_path):
+            print(f"文件 {file_path} 正在被占用，尝试关闭占用进程...")
+            find_and_kill_file_handles(file_path)
+
+    # 保存文件
+    try:
+        doc.save(file_path)
+        print(f"文件已成功保存至: {file_path}")
+    except Exception as e:
+        print(f"保存文件失败: {e}")
 
 
 def set_heading_style(heading, level=1):
@@ -18,8 +64,6 @@ def set_heading_style(heading, level=1):
         run.font.size = Pt(16)
         run.bold = True  # 设置加粗
         run.font.name = "Times New Roman"
-        r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "黑体")
         run.font.color.rgb = RGBColor(0, 0, 0)
         # 设置段落格式（顶格、左对齐）
         heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
@@ -27,8 +71,6 @@ def set_heading_style(heading, level=1):
         run.font.size = Pt(12)  #
         run.bold = True  # 设置加粗
         run.font.name = "Times New Roman"
-        r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")
         run.font.color.rgb = RGBColor(0, 0, 0)
         # 设置段落格式（顶格、左对齐）
         heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
@@ -36,8 +78,6 @@ def set_heading_style(heading, level=1):
         run.font.size = Pt(12)  #
         run.bold = False  # 设置加粗
         run.font.name = "Times New Roman"
-        r = run._element
-        r.rPr.rFonts.set(qn("w:eastAsia"), "宋体")
         run.font.color.rgb = RGBColor(0, 0, 0)
         # 设置段落格式（顶格、左对齐）
         heading.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
@@ -163,11 +203,11 @@ def setup_styles(doc):
     # =====================================
     normal_style = doc.styles["Normal"]
     normal_style.font.name = "Times New Roman"  # 英文字体
-    normal_style.font.size = Pt(11)  # 字号
+    normal_style.font.size = Pt(12)  # 字号
     normal_style.font.color.rgb = RGBColor(0, 0, 0)
     # 段落格式
     normal_style.paragraph_format.first_line_indent = Cm(0.74)  # 首行缩进
-    normal_style.paragraph_format.line_spacing = 1.15  # 行距
+    normal_style.paragraph_format.line_spacing = 1.5  # 行距
     normal_style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY  # 两端对齐
 
     # =====================================
@@ -231,20 +271,13 @@ def setup_styles(doc):
         style.paragraph_format.first_line_indent = Pt(0)  # 首行缩进 0 字符
 
 
-def auto_report_EN():
-    # 创建文档
-    doc = Document()
-    setup_styles(doc)  # 设置默认样式
-
-    # 封面标题
-
-    # 添加空段落，使标题位于页面中部
+def add_cover(doc):
     for _ in range(6):  # 根据页面长度适当调整数量
         i = doc.add_paragraph()
         i.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     title = doc.add_paragraph()
     title_run = title.add_run(
-        "XXX Petroleum Hydrocarbon Contaminated Site  Investigation Report Based on Minimally Mnvasive Measurements"
+        "XXX Petroleum Hydrocarbon Contaminated Site Investigation Report"
     )
     title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # 居中对齐
     title_run.font.name = "Times New Roman"  # 设置中文字
@@ -262,8 +295,6 @@ def auto_report_EN():
     )
     organization_run.font.name = "Times New Roman"
     organization_run.font.size = Pt(12)
-    r = organization_run._element  # 处理中文字体
-    r.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
 
     # 添加时间
     date_paragraph = doc.add_paragraph()
@@ -273,6 +304,15 @@ def auto_report_EN():
     date_run.font.size = Pt(16)
     # 添加分节符
     doc.add_section(WD_SECTION.NEW_PAGE)
+    return doc
+
+
+def auto_report_EN():
+    # 创建文档
+    doc = Document()
+    # 设置默认样式
+    setup_styles(doc)
+    doc = add_cover(doc)  # 添加封面
 
     doc.add_heading("1 Guidelines for automated report generation", level=1)
     doc.add_heading("1.1 Code writing", level=3)
@@ -328,7 +368,7 @@ def auto_report_EN():
         "CH4(%)",
         "FG(copies/g)",
     ]
-    add_table_header(doc, "Table1-1 Microperturbation survey site data")
+    add_table_header(doc, "Table1-1 Non-invasive survey site data")
     table = doc.add_table(rows=6, cols=len(table_header))
     table.style = "Table Grid"
     for i, col_name in enumerate(table_header):
@@ -374,4 +414,4 @@ def auto_report_EN():
 
 if __name__ == "__main__":
     file = auto_report_EN()
-    file.save("C:\\Users\\apple\\Desktop\\auto_report.docx")
+    file.save("auto_report.docx")

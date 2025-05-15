@@ -1,8 +1,13 @@
 from enum import Enum
+from pathlib import Path
+
+current_dir = Path(__file__).parent
 
 
 class Software_info(Enum):
-    software_name = "SDPHC"
+    software_name = "Software for Detecting Petroleum Hydrocarbons Contamination"
+    software_short_name = "SDPHC"
+    software_name_chinese = "地下水LNAPL污染调查分析软件"
     software_version = "1.0.0"
     software_author = "Hefei University of Technology"
     software_email = ""

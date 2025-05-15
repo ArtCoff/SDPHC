@@ -32,7 +32,7 @@ from utils.pyside6_utils import (
     traverse_layout,
     show_multiple_plots,
 )
-from core.auto_report_EN import auto_report_EN as auto_report
+from utils.auto_report_EN import auto_report_EN as auto_report
 
 
 class backgroundValue_worker(QThread):
@@ -95,7 +95,13 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
         import json
 
         all_indicators = set()
-        with open("./resources/Monitoring_pollution.json", "r", encoding="utf-8") as f:
+        from pathlib import Path
+
+        current_dir = Path(__file__).parent
+        json_path = (
+            current_dir.parent / "assets" / "database" / "monitoring_pollution.json"
+        )
+        with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         for key, value in data.items():
@@ -413,7 +419,7 @@ class function_win(QWidget):
                 )
 
     def plot_data(self):
-        from app.utils.pyside6_utils import show_multiple_plots
+        from utils.pyside6_utils import show_multiple_plots
 
         figs = []
         for indicator, fig in self.result_dict.get("anomaly_figs"):
@@ -471,3 +477,7 @@ class GeoDataFrameModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self._gdf.index[section])
         return None
+
+
+if __name__ == "__main__":
+    ...

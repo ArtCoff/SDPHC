@@ -110,3 +110,7 @@ def safe_remove(lst, item):
     except ValueError:
         pass
     return lst
+
+
+if __name__ == "__main__":
+    ...

@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QDoubleSpinBox,
-    QPlainTextEdit,
     QLineEdit,
     QFileDialog,
     QVBoxLayout,
@@ -372,7 +371,7 @@ class LoadingWindow(QWidget):
 class PlotWindow(QWidget):
     def __init__(self, fig):
         super().__init__()
-        from app.utils.pyside6_utils import AppStyle
+        from utils.pyside6_utils import AppStyle
 
         self.setWindowTitle("Data Visualization")
         self.resize(800, 600)

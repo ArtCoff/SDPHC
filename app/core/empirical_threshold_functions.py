@@ -129,6 +129,8 @@ def calculate_score(
         result["All_indicators_Scores"] = (
             result["The_other_soil_gas_scores"] + result["Radon_Score"]
         )
+    else:
+        result["All_indicators_Scores"] = None
     return result
 
 

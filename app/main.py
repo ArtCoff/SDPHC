@@ -19,7 +19,7 @@ from gui.custom_controls import (
     LanguageSwitcher,
 )
 from gui.empirical_threshold_analysis import Attribute_Window
-from gui.background_value_analysis import Attribute_Window_BackgroundValue
+from gui.background_level_analysis import Attribute_Window_BackgroundValue
 from gui.principal_component_analysis import Attribute_Window_PCA
 
 
@@ -48,9 +48,14 @@ class start_window(QWidget):
         self.language_switcher = LanguageSwitcher()
 
         #!
-        self.outline_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\boundary.gpkg")
-        self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\Lanxing.gpkg")
-
+        # self.outline_dataset.setText(
+        #     r"C:\Users\Apple\Desktop\MIM\tests\JN_boundary.gpkg"
+        # )
+        # self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\JN_NIS.gpkg")
+        # self.outline_dataset.setText(
+        #     r"C:\Users\Apple\Desktop\MIM\tests\LX_boundary.gpkg"
+        # )
+        # self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\LX_NIS.gpkg")
         #!
         form_layout = QFormLayout()
         form_layout.addRow(self.tr("Boundary File:"), self.outline_dataset)

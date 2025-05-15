@@ -66,7 +66,7 @@ class Attribute_Window(QWidget):
     def initUI(self, options):
         self.setWindowTitle(Software_info.software_name.value)
         self.resize(500, 300)
-        self.setMinimumSize(400, 300)
+        # self.setMinimumSize(400, 300)
         self.setWindowIcon(AppStyle.icon())
         self.plot_dataset_info_btn = QPushButton(
             self.tr("Displays an overview of the data")
@@ -255,7 +255,7 @@ class Contamination_identification_win(QWidget):
         show_multiple_plots(self.result_dict.get("pollution_level_fig"))
 
     def auto_report(self):
-        from core.auto_report_EN import auto_report_EN as Auto_report
+        from app.utils.auto_report_EN import auto_report_EN as Auto_report
 
         doc = Auto_report()
         file_path, _ = QFileDialog.getSaveFileName(
@@ -305,7 +305,7 @@ class function_win(QWidget):
         # 调整窗口大小以适应表格内容
         self.adjustSize()
         self.resize(800, 600)
-        self.setMinimumSize(800, 600)
+        # self.setMinimumSize(800, 600)
         # 创建导出按钮
         self.export_button = QPushButton(self.tr("Export to Excel"))
         self.export_button.clicked.connect(self.export_to_excel)

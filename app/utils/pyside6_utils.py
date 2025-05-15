@@ -9,11 +9,14 @@ from PySide6.QtWidgets import (
 )
 from pathlib import Path
 
+current_dir = Path(__file__).parent
+
 
 class AppStyle:
     @staticmethod
     def icon():
-        return QIcon(r"./resources/icon.ico")
+        # return QIcon(r"/assets/icons/icon.ico")
+        return QIcon(str(current_dir.parent / "assets" / "icons" / "icon.ico"))
 
     @staticmethod
     def title():
@@ -64,7 +67,7 @@ def show_multiple_plots(figs):
     :param figs: list[Figure]
     """
     from matplotlib.figure import Figure
-    from app.gui.custom_controls import PlotWindow
+    from gui.custom_controls import PlotWindow
     from copy import deepcopy
 
     figs = deepcopy(figs)
@@ -134,7 +137,7 @@ def update_config_value(key, new_value, backup=False):
     file_path = Path("settings.txt").resolve()
     # 读取文件并逐行处理
     with file_path.open("r", encoding="utf-8") as file:
-        for line in f:
+        for line in file:
             # 匹配目标键
             match = pattern.match(line.strip())
             if match:
