@@ -33,6 +33,7 @@ from gui.custom_controls import (
     LoadingWindow,
 )
 from utils.pyside6_utils import center_window, show_multiple_plots, AppStyle
+from utils.auto_report_EN import auto_report_EN as Auto_report
 
 
 class worker(QThread):
@@ -255,7 +256,6 @@ class Contamination_identification_win(QWidget):
         show_multiple_plots(self.result_dict.get("pollution_level_fig"))
 
     def auto_report(self):
-        from app.utils.auto_report_EN import auto_report_EN as Auto_report
 
         doc = Auto_report()
         file_path, _ = QFileDialog.getSaveFileName(

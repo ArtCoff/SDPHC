@@ -2,7 +2,6 @@ import os
 import psutil
 from datetime import datetime
 from pathlib import Path
-from PIL import Image
 from docx import Document
 from docx.shared import Inches, Pt, Cm, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
@@ -183,13 +182,11 @@ def insert_image(doc, image_path, width=None, height=None):
 
     # 设置图片宽度和高度
     if width and height:
-        run.add_picture(
-            image_path, width=Inches(width), height=Inches(height)
-        )  # 设置宽高
+        run.add_picture(image_path, width=Cm(width), height=Cm(height))  # 设置宽高
     elif width:
-        run.add_picture(image_path, width=Inches(width))  # 只设置宽度
+        run.add_picture(str(image_path), width=Cm(width))  # 只设置宽度
     elif height:
-        run.add_picture(image_path, height=Inches(height))  # 只设置高度
+        run.add_picture(image_path, height=Cm(height))  # 只设置高度
     else:
         run.add_picture(image_path)  # 默认不设置，按原图大小插入
 

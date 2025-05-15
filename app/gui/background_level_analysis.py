@@ -123,7 +123,7 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
         self.worker.finished_signal.connect(self.worker.deleteLater)
         self.worker.start()
 
-    @Slot(object)
+    @Slot(object)  # type: ignore
     def on_worker_result_ready(self, result_dict):
         if self.loading_window:
             self.loading_window.close()
@@ -289,7 +289,7 @@ class background_value_input_manual(QWidget):
         self.worker.finished_signal.connect(self.worker.deleteLater)
         self.worker.start()
 
-    @Slot(object)
+    @Slot(object)  # type: ignore
     def on_worker_result_ready(self, result_dict):
         self.hide()
         if self.loading_window:
@@ -308,7 +308,7 @@ class background_value_input_manual(QWidget):
             "you can use the 'Indicator Data Analysis' button to analyze the data and automatically determine the background values. "
             "The 'ECDF' button can be used to draw the ECDF diagram of the indicator data. "
             "After inputting the background values, click the 'Next' button to go to the next step.",
-        )
+        )  # type: ignore
 
 
 class function_win(QWidget):
@@ -388,7 +388,7 @@ class function_win(QWidget):
                     self,
                     "Success!",
                     "The form file has been saved locally and can be opened with Excel.",
-                )
+                )  # type: ignore
             except Exception as e:
                 QMessageBox.critical(
                     self,
@@ -410,7 +410,7 @@ class function_win(QWidget):
                     self,
                     "Success!",
                     "The vector files have been saved locally and can be opened using QGIS or ArcGIS.",
-                )
+                )  # type: ignore
             except Exception as e:
                 QMessageBox.critical(
                     self,
@@ -429,7 +429,7 @@ class function_win(QWidget):
 
     def auto_report(self):
         doc = auto_report(
-            self.gdf, background_file=None, final_boundarys=self.final_boundarys
+            self.gdf, background_file=None, final_boundarys=self.final_boundarys  # type: ignore
         )
         file_path, _ = QFileDialog.getSaveFileName(
             self,
@@ -444,7 +444,7 @@ class function_win(QWidget):
                     self,
                     "succeed",
                     "The report has been saved locally and can be opened using WPS or Word!",
-                )
+                )  # type: ignore
             except Exception as e:
                 QMessageBox.critical(
                     self, "failed", f"The report failed to be saved due to:{str(e)}"
@@ -464,7 +464,7 @@ class GeoDataFrameModel(QAbstractTableModel):
     def columnCount(self, parent=None):
         return len(self._columns_to_display)
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index, role=Qt.DisplayRole):  # type: ignore
         if role == Qt.DisplayRole:
             column_name = self._columns_to_display[index.column()]
             return str(self._gdf.iloc[index.row()][column_name])

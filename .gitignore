@@ -1,11 +1,14 @@
  # 忽略所有 .log 文件
 *.log
 *.ts
+*.pyc
+*.pyo
 
 # 忽略特定文件夹
 __pycache__/
 .vscode/
 auto_report_cache/
+app/.mypy_cache/
 
 # 忽略临时文件夹（递归匹配所有子目录中的 tmp 文件夹）
 **/tmp

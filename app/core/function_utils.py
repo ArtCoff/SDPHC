@@ -4,9 +4,8 @@ import numpy as np
 import matplotlib
 
 matplotlib.use("QtAgg")
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from utils.predefined_data import MIM_indicators, Drawing_specifications
+from utils.predefined_data import Drawing_specifications
 
 
 # 添加指北针 (North Arrow)

@@ -6,6 +6,14 @@ from docx.enum.section import WD_SECTION
 from pathlib import Path
 from PIL import Image
 from datetime import datetime
+
+#
+import os
+import sys
+
+# 获取当前脚本所在目录的上一级目录（即项目根目录）
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(project_root)
 from utils.auto_report_EN import (
     set_heading_style,
     set_paragraph_style,
@@ -15,6 +23,12 @@ from utils.auto_report_EN import (
     setup_styles,
     save_docx_safely,
 )
+
+print(f"Project root directory: {project_root}")
+print(f"Current script directory: {Path.cwd()}")
+cache_dir = Path(project_root) / "cache"
+if not cache_dir.exists():
+    cache_dir.mkdir(parents=True)
 
 
 # 添加封面
@@ -44,6 +58,17 @@ def add_cover_page(doc):
     doc.add_page_break()
 
 
+def add_Disclaimer(doc):
+    doc.add_heading("Disclaimer", level=1)
+    doc.add_paragraph(
+        """
+    This report is a simulated example created solely for academic illustration in the context of environmental site assessments. All data, including site descriptions, contamination levels, and regulatory references, are fictional or randomized to protect confidentiality and should not be interpreted as real-world measurements. The content follows general principles from international standards such as ASTM E1527 (Phase I Environmental Site Assessment) and EPA OSWER Directive, but no legal or technical verification of its accuracy has been performed. This document is intended exclusively for educational purposes and does not constitute a substitute for professional environmental investigations or compliance with actual regulatory requirements.
+    
+        """
+    )
+    doc.add_page_break()
+
+
 # 添加执行摘要
 def add_executive_summary(doc):
     doc.add_heading("1. Executive Summary", level=1)
@@ -68,7 +93,7 @@ def add_introduction_section(doc):
     # 背景
     doc.add_heading("2.1 Background", level=2)
     doc.add_paragraph(
-        "The XXX industrial site, located at 40°N, 75°W, operated as a petroleum storage facility from 1960 to 1998. Historical records indicate multiple underground storage tank (UST) leaks, leading to potential LNAPL contamination of the shallow aquifer. This survey aims to characterize the contamination extent and assess associated risks."
+        "The XXX industrial site, located at 40°N, 75°W, operated as a petroleum storage facility from 2003. Historical records indicate multiple underground storage tank (UST) leaks, leading to potential LNAPL contamination of the shallow aquifer. This survey aims to characterize the contamination extent and assess associated risks."
     )
 
     # 调查目标
@@ -145,6 +170,12 @@ def add_methodology_section(doc):
     doc.add_paragraph(
         "The NIS approach integrates multi-parameter monitoring and biogeochemical mechanism analysis, as illustrated in Fig. 1."
     )
+    insert_image(
+        doc=doc,
+        image_path=Path(project_root) / "assets/figs/conceptFig.png",
+        width=12,
+    )
+    add_pic_header(doc, "Figure 1: NIS Conceptual Framework")
 
     # 子章节 5.1.1
     doc.add_heading("5.1.1 VOC Flux Monitoring", level=3)
@@ -325,7 +356,9 @@ def add_conclusion_section(doc):
 def auto_report_for_empirical_threshold_analysis():
     doc = Document()
     setup_styles(doc)  # 设置默认样式
+
     add_cover_page(doc)
+    add_Disclaimer(doc)
     # add_table_of_contents(doc)
     add_executive_summary(doc)
     add_introduction_section(doc)
@@ -341,4 +374,4 @@ def auto_report_for_empirical_threshold_analysis():
 
 if __name__ == "__main__":
     file = auto_report_for_empirical_threshold_analysis()
-    save_docx_safely(file, "C:\\Users\\Apple\\Desktop\\auto_report.docx")
+    save_docx_safely(file, "C:\\Users\\Apple\\Desktop\\AppendixB.docx")
