@@ -46,7 +46,7 @@ class indicator:
         return f"indicator(name={self.name}, chinese_name={self.chinese_name}, unit={self.unit},label={self.label})"
 
 
-class MIM_indicators(Enum):
+class NIS_indicators(Enum):
     Radon = indicator(
         name="Radon",
         chinese_name="氡气",

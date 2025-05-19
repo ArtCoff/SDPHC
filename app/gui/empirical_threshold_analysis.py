@@ -19,7 +19,7 @@ from core.function_utils import (
 from core.empirical_threshold_functions import calculate_ExperienceValueMethod_scores
 from utils.predefined_data import (
     Software_info,
-    MIM_indicators,
+    NIS_indicators,
     Methods,
     Secondary_Functions_of_ExperienceValue,
 )
@@ -33,7 +33,9 @@ from gui.custom_controls import (
     LoadingWindow,
 )
 from utils.pyside6_utils import center_window, show_multiple_plots, AppStyle
-from utils.auto_report_EN import auto_report_EN as Auto_report
+from report_templates.report_template_1 import (
+    auto_report_for_empirical_threshold_analysis,
+)
 
 
 class worker(QThread):
@@ -88,7 +90,7 @@ class Attribute_Window(QWidget):
         self.combos = []
         self.combos.append(CustomComboBox(options, attribute="Point_ID"))
         self.form_layout.addRow("Point ID:", self.combos[0])
-        for indicator in MIM_indicators:
+        for indicator in NIS_indicators:
             combo = CustomComboBox(options, attribute=indicator.value.name)
             self.form_layout.addRow(f"{indicator.value.label}:", combo)
             self.combos.append(combo)
@@ -257,7 +259,7 @@ class Contamination_identification_win(QWidget):
 
     def auto_report(self):
 
-        doc = Auto_report()
+        doc = auto_report_for_empirical_threshold_analysis(self.result_dict["gdf"])
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Export report",

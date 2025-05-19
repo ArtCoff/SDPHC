@@ -20,7 +20,7 @@ from core.background_value_functions import (
     process_background_value_method,
     calculate_backgroundValue,
 )
-from utils.predefined_data import Software_info, MIM_indicators
+from utils.predefined_data import Software_info, NIS_indicators
 from gui.custom_controls import (
     background_value_input_doublespinbox,
     bottom_buttons,
@@ -32,7 +32,7 @@ from utils.pyside6_utils import (
     traverse_layout,
     show_multiple_plots,
 )
-from utils.auto_report_EN import auto_report_EN as auto_report
+from utils.auto_report_EN import report_test as auto_report
 
 
 class backgroundValue_worker(QThread):
@@ -231,22 +231,22 @@ class background_value_input_manual(QWidget):
         self.setMinimumSize(500, 300)
 
         self.radon_background_value = indicator_background_value_input(
-            MIM_indicators.Radon, self.result_dict, value_range=999999
+            NIS_indicators.Radon, self.result_dict, value_range=999999
         )
         self.VOCs_background_value = indicator_background_value_input(
-            MIM_indicators.VOCs, self.result_dict, value_range=999999
+            NIS_indicators.VOCs, self.result_dict, value_range=999999
         )
         self.CO2_background_value = indicator_background_value_input(
-            MIM_indicators.CO2, self.result_dict, value_range=999999
+            NIS_indicators.CO2, self.result_dict, value_range=999999
         )
         self.O2_background_value = indicator_background_value_input(
-            MIM_indicators.O2, self.result_dict, value_range=100
+            NIS_indicators.O2, self.result_dict, value_range=100
         )
         self.CH4_background_value = indicator_background_value_input(
-            MIM_indicators.CH4, self.result_dict, value_range=100
+            NIS_indicators.CH4, self.result_dict, value_range=100
         )
         self.gene_background_value = indicator_background_value_input(
-            MIM_indicators.FG, self.result_dict, value_range=999999
+            NIS_indicators.FG, self.result_dict, value_range=999999
         )
         self.value_layout = QVBoxLayout()
         self.value_layout.setSpacing(5)

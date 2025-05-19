@@ -10,15 +10,15 @@ from datetime import datetime
 #
 import os
 import sys
+import pandas as pd
+import geopandas as gpd
 
 # 获取当前脚本所在目录的上一级目录（即项目根目录）
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(project_root)
 from utils.auto_report_EN import (
-    set_heading_style,
-    set_paragraph_style,
-    add_pic_header,
-    add_table_header,
+    add_table,
+    add_bullet_list,
     insert_image,
     setup_styles,
     save_docx_safely,
@@ -93,7 +93,7 @@ def add_introduction_section(doc):
     # 背景
     doc.add_heading("2.1 Background", level=2)
     doc.add_paragraph(
-        "The XXX industrial site, located at 40°N, 75°W, operated as a petroleum storage facility from 2003. Historical records indicate multiple underground storage tank (UST) leaks, leading to potential LNAPL contamination of the shallow aquifer. This survey aims to characterize the contamination extent and assess associated risks."
+        "The XXX industrial site, located at 40°N, 75°W, operated as a petroleum storage facility from 2003. Historical records indicate multiple storage tank leaks, leading to potential LNAPL contamination of the shallow aquifer. This survey aims to characterize the contamination extent and assess associated risks."
     )
 
     # 调查目标
@@ -118,7 +118,7 @@ def add_regulatory_framework_section(doc):
     standards = [
         "EPA Risk Screening Levels (RSLs, 2023)**: Benzene (0.1 ppb), TPH (500 mg/kg soil, 100 µg/L groundwater).",
         "State-specific Vapor Intrusion Thresholds**: California DTSC (10 ppb benzene in soil gas).",
-        "Risk Models**: EPA RBCA (Tier 1) and EU Soil Screening Values (SSVs).",
+        "Risk Models: EPA RBCA (Tier 1) and EU Soil Screening Values (SSVs).",
     ]
     for std in standards:
         doc.add_paragraph(std, style="List Bullet")
@@ -139,7 +139,7 @@ def add_site_description_section(doc):
     # 物理特征
     doc.add_heading("4.1 Physical Characteristics", level=2)
     doc.add_paragraph(
-        "The XXX site spans 15 hectares with sandy loam soil texture. The terrain is flat with an elevation range of 10–15 m above sea level. No active operations are currently present on-site."
+        "The XXX site covers an area of 12 hectares (120,000 m²) and features sandy loam soil. The terrain is flat, with an elevation ranging from 10 to 15 meters above sea level. The site is actively engaged in industrial production, primarily manufacturing phenol and acetone , with ongoing operational activities at the facility."
     )
 
     # 水文地质
@@ -155,7 +155,7 @@ def add_site_description_section(doc):
     # 土地利用与受体
     doc.add_heading("4.3 Land Use and Receptors", level=2)
     doc.add_paragraph(
-        "The site is bordered by a residential zone 500 meters to the east. A creek flows 200 meters to the south, serving as a potential surface water receptor for contaminant migration."
+        "The site is located within an urban industrial park, with multiple neighboring factories operating in close proximity (approximately 500 meters to the east). The specific production activities of these facilities are currently unknown. A creek flows 200 meters to the south of the site, which may act as a potential surface water receptor for contaminant migration."
     )
 
     doc.add_page_break()
@@ -174,9 +174,8 @@ def add_methodology_section(doc):
         doc=doc,
         image_path=Path(project_root) / "assets/figs/conceptFig.png",
         width=12,
+        figure_title="Figure 1: NIS Conceptual Framework",
     )
-    add_pic_header(doc, "Figure 1: NIS Conceptual Framework")
-
     # 子章节 5.1.1
     doc.add_heading("5.1.1 VOC Flux Monitoring", level=3)
     p = doc.add_paragraph()
@@ -189,20 +188,65 @@ def add_methodology_section(doc):
     p.add_run(
         "Grid spacing 20 m × 20 m; soil gas sampling depth 0.5 m using stainless steel probes."
     )
-
-    # 子章节 5.1.2
-    doc.add_heading("5.1.2 Biogeochemical Indicators", level=3)
+    doc.add_heading("5.1.2 CO₂/O₂ Flux Monitoring", level=3)
+    # CO2/O2 测量
+    co2o2_paragraph = doc.add_paragraph()
+    co2o2_paragraph.add_run("Instrument: ").bold = True
+    co2o2_paragraph.add_run(
+        "Li-Cor 8100 soil gas analyzer with an infrared gas analyzer (IRGA) for real-time CO₂ and O₂ concentration measurements."
+    )
+    co2o2_paragraph = doc.add_paragraph()
+    co2o2_paragraph.add_run("Protocol: ").bold = True
+    content = [
+        "Soil gas sampling depth: 0.5 m using stainless steel probes.",
+        "Closed-chamber method: A 1 L chamber is placed over the probe, and CO₂/O₂ flux is calculated based on concentration gradient over time.",
+        "Frequency: Bi-weekly measurements during survey period.",
+    ]
+    add_bullet_list(doc, items=content)
+    co2o2_paragraph = doc.add_paragraph()
+    co2o2_paragraph.add_run("Interpretation: ").bold = True
+    content = [
+        r"O₂ <5% and CO₂ >3% indicate active aerobic hydrocarbon degradation.",
+        r"CO₂/O₂ molar ratio >1.5 suggests enhanced organic carbon mineralization.",
+    ]
+    add_bullet_list(doc, items=content)
+    # H2S/CH4 测量
+    doc.add_heading("5.1.3 H₂S and CH₄ Detection", level=3)
+    h2sch4_paragraph = doc.add_paragraph()
+    h2sch4_paragraph.add_run("Instrument: ").bold = True
+    content = [
+        "H₂S: Jerome J605 portable hydrogen sulfide analyzer (electrochemical sensor, detection range: 0.1–200 ppm).",
+        "CH₄: Los Gatos Research Ultra-Portable Greenhouse Gas Analyzer (laser absorption spectroscopy, detection limit: 1 ppb).",
+    ]
+    add_bullet_list(doc, items=content)
+    h2sch4_paragraph = doc.add_paragraph()
+    h2sch4_paragraph.add_run("Protocol: ").bold = True
+    content = [
+        "Soil gas sampling depth: 0.5 m using stainless steel probes.",
+        "Real-time data logging with field calibration using certified gas standards (10 ppm H₂S, 5 ppm CH₄).",
+    ]
+    add_bullet_list(doc, items=content)
+    h2sch4_paragraph = doc.add_paragraph()
+    h2sch4_paragraph.add_run("Interpretation: ").bold = True
+    content = [
+        "H₂S >50 ppm correlates with sulfate-reducing pathways."
+        "CH₄ >100 ppm indicates methanogenic activity (prmA gene dominance)."
+    ]
+    add_bullet_list(doc, items=content)
+    doc.add_heading("5.1.4 Biogeochemical Indicators", level=3)
     p = doc.add_paragraph()
     p.add_run("Gas Analysis: ").bold = True
-    p.add_run("O₂/CO₂ flux via Li-Cor 8100 soil gas probes; H₂ and CH₄ via GC-TCD.")
+    doc.add_paragraph(
+        "O₂/CO₂ flux via Li-Cor 8100 soil gas probes; H₂ and CH₄ via GC-TCD."
+    )
     p = doc.add_paragraph()
-    p.add_run("Microbial Gene Assays: ").bold = True
-    p.add_run(
-        "qPCR targeting *alkB* (alkanes), *todC1* (aromatics), and *mcrA* (methanogens)."
+    p.add_run("Microbial functional Gene Assays: ").bold = True
+    doc.add_paragraph(
+        " qPCR targeting C12O (aromatic hydrocarbon degradation), alkB (alkane oxidation), and prmA (methanogenesis/methylamine utilization)."
     )
 
     # 子章节 5.1.3
-    doc.add_heading("5.1.3 Radon Deficit Mapping", level=3)
+    doc.add_heading("5.1.5 Radon Deficit Mapping", level=3)
     p = doc.add_paragraph()
     p.add_run("Technique: ").bold = True
     p.add_run("AlphaGuard radon detector for near-surface ²²²Rn activity (Bq/m³).")
@@ -216,33 +260,61 @@ def add_methodology_section(doc):
 
 
 # 添加结果章节（含表格和图表）
-def add_results_section(doc):
+def add_results_section(doc, gdf):
     doc.add_heading("6. Results and Data Analysis", level=1)
-
-    # 图表占位符
-    # doc.add_heading("Figure 1: Sampling Point Distribution", level=2)
-    # doc.add_picture("sampling_map.png", width=Inches(5.5))  # 替换为实际图片路径
-    # insert_image()
-    add_pic_header(doc, "Figure 1: Sampling Point Distribution")
-    caption = doc.add_paragraph(
-        "Legend: Red dots = VOC anomalies; Blue triangles = radon deficit zones"
+    doc.add_heading("6.1 NIS survey", level=2)
+    doc.add_paragraph(
+        "The northern portion of the park contains the main production facilities (e.g., distillation and oxygenation workshops), while the southern portion includes storage, electrical, and fire protection facilities. Groundwater monitoring data indicate that PHCs may be leaking from the site. Taking into account the actual production and facility distribution in the park, a total of 146 NIS monitoring points were deployed, including 29 functional gene measurement points and 15 radon measurement points (see Figure 2 for specific locations). Based on the NIS monitoring data, Empirical threshold analysis was used to carry out the investigation of the current status of PHCs pollution."
     )
-    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # 表格
-    # doc.add_heading("Table 1: VOC Concentrations (ppb)", level=2)
-    add_table_header(doc, "Table 1: VOC Concentrations (ppb)")
-    data = [
-        ["Sample ID", "X (m)", "Y (m)", "Benzene", "Toluene", "HCHO", "PID Response"],
-        ["S-01", "20", "20", "12", "8", "5", "150"],
-        ["S-08", "100", "60", "850", "620", "30", "2100"],
-        ["S-15", "180", "100", "45", "30", "10", "300"],
+    insert_image(
+        doc,
+        image_path=Path(project_root) / "assets/figs/NIS_point.jpg",
+        width=10,
+        figure_title="Figure 2: Sampling Point Distribution",
+        legend="Legend: Dots = NIS survey point; Red triangles = Park Boundary",
+    )
+    nis_data = gdf[["point_code", "VOCs", "O2", "CO2", "CH4", "H2S"]].copy()
+    exceed_data = gdf[gdf["The_other_soil_gas_scores"] >= 6].copy()
+    exceed_data = exceed_data[
+        [
+            "Point_ID",
+            "VOCs_Score",
+            "CO2_Score",
+            "H2_Score",
+            "O2_Score",
+            "CH4_Score",
+            "H2S_Score",
+            "The_other_soil_gas_scores",
+        ]
     ]
-    table = doc.add_table(rows=len(data), cols=len(data[0]))
-    table.style = "Table Grid"
-    for i, row in enumerate(table.rows):
-        for j, cell in enumerate(row.cells):
-            cell.text = data[i][j]
+    doc.add_paragraph(
+        "Table 1 summarizes the volatile organic compound (VOC) concentrations measured across 45 sampling points using Non-Invasive Survey (NIS) techniques. Key pollutants include benzene, toluene, formaldehyde (HCHO), and PID response values. The data reveals a maximum benzene concentration of 850 ppb at sampling point S-08, exceeding the California Department of Toxic Substances Control (DTSC) vapor intrusion threshold of 10 ppb by 85-fold . Toluene concentrations up to 620 ppb were also observed in the northern quadrant of the site (Area A), correlating with elevated PID readings (2100 arbitrary units). These findings indicate localized LNAPL (light non-aqueous phase liquid) contamination, with active volatilization of aromatic hydrocarbons."
+    )
+    add_table(doc, df=nis_data, table_title="Table 1: NIS survey points data")
+    doc.add_heading("6.2 Analysis results", level=2)
+    doc.add_paragraph(
+        "An empirical threshold analysis was conducted to identify sampling points exceeding regulatory benchmarks (Fig. 1). Using EPA Risk Screening Levels (RSLs) for benzene (0.1 ppb) and DTSC thresholds (10 ppb for soil gas), 12 out of 45 points (26.7%) were classified as high-risk zones. Notably, Sample S-08 in Area A exhibited benzene concentrations 850 times higher than the EPA RSL. Microbial gene assays further confirmed contamination: the C12O gene (aromatic hydrocarbon degradation) showed abundance peaks of 9.6×10⁵ copies/g soil in these zones, directly linking VOC anomalies to petroleum hydrocarbon degradation pathways."
+    )
+    add_table(doc, df=exceed_data, table_title="Table 2: Exceedance points")
+    doc.add_paragraph()
+    doc.add_paragraph(
+        "Fig.3 shows the manual delineation based on the anomalies of each monitoring point to determine the pollution situation, and finally screened out the pollution source area and the suspected pollution source area, according to the delineation of the scope to determine the main leakage area is located in the Loading platform and Hazardous waste room (red circled area)), and the orange circled area is also assigned to the key monitoring area. According to the delineation of the scope, the main leakage areas are located in the Loading platform and Hazardous waste room (circled in red), and the area circled in orange is also included in the key monitoring area. Fig.4 shows the contamination range, which was evaluated based on the anomaly scores of all the monitoring points ((anomalies are marked in red)), and the final result shows that the whole plant is contaminated, and the contamination may escape from the boundary, except for the southwest boundary."
+    )
+    insert_image(
+        doc,
+        image_path=Path(project_root) / "assets/figs/sourcezone.jpg",
+        width=10,
+        figure_title="Figure 3: Source Zone Identification",
+        legend="Legend: Red = LNAPL source zone; Orange = Suspected LNAPL zone",
+    )
+    insert_image(
+        doc,
+        image_path=Path(project_root) / "assets/figs/scope.png",
+        width=10,
+        figure_title="Figure 4: Contamination Scope",
+        legend="Legend: Red = Contamination Scope; White = Clean Soil",
+    )
     doc.add_page_break()
 
 
@@ -284,11 +356,11 @@ def add_risk_assessment_section(doc):
         ["TPH (C6-C40)", "N/A", "1.5", "Yes"],
         ["Toluene", "N/A", "0.6", "No"],
     ]
-    risk_table = doc.add_table(rows=len(risk_table_data), cols=len(risk_table_data[0]))
-    risk_table.style = "Table Grid"
-    for i, row in enumerate(risk_table.rows):
-        for j, cell in enumerate(row.cells):
-            cell.text = risk_table_data[i][j]
+    add_table(
+        doc,
+        df=pd.DataFrame(risk_table_data, columns=risk_table_data[0]),
+        table_title="Table 2: Risk Assessment Summary",
+    )
     doc.add_paragraph("Threshold: Carcinogenic Risk >1×10⁻⁶ or HQ >1.0.")
 
     # 7.2 Ecological Risks
@@ -311,18 +383,6 @@ def add_risk_assessment_section(doc):
     doc.add_paragraph(
         "The plume discharge into the nearby creek may affect benthic organisms. Predicted TPH concentrations exceed EPA aquatic toxicity thresholds."
     )
-
-    # 图表占位符
-    # doc.add_heading("Figure 2: Risk Assessment Model Output", level=2)
-    # doc.add_picture("risk_model_output.png", width=Inches(5.5))  # 替换为实际图片路径
-    # insert_image()
-    add_pic_header(doc, "Figure 2: Risk Assessment Model Output")
-    caption = doc.add_paragraph(
-        "Legend: Red zones = high cancer risk; Yellow zones = moderate non-carcinogenic risk."
-    )
-
-    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
     # 7.3 Risk Summary
     doc.add_heading("7.3 Risk Summary", level=2)
     doc.add_paragraph("The risk assessment concludes that:")
@@ -346,14 +406,14 @@ def add_conclusion_section(doc):
     conclusions = [
         "Phase III Investigation: Install monitoring wells in Area A for LNAPL thickness quantification."
         "Remediation Options: Bioremediation with nitrate amendment to enhance aromatic degradation."
-        "Long-Term Monitoring: Bi-monthly VOC and microbial gene abundance tracking."
+        "Long-Term Monitoring: Bi-monthly VOC and microbial functional gene abundance tracking."
     ]
     for item in conclusions:
         doc.add_paragraph(item, style="List Number")
 
 
 # 主函数
-def auto_report_for_empirical_threshold_analysis():
+def auto_report_for_empirical_threshold_analysis(gdf=None):
     doc = Document()
     setup_styles(doc)  # 设置默认样式
 
@@ -365,7 +425,7 @@ def auto_report_for_empirical_threshold_analysis():
     add_regulatory_framework_section(doc)
     add_site_description_section(doc)
     add_methodology_section(doc)
-    add_results_section(doc)
+    add_results_section(doc, gdf)
     add_risk_assessment_section(doc)
     add_conclusion_section(doc)
 
@@ -373,5 +433,10 @@ def auto_report_for_empirical_threshold_analysis():
 
 
 if __name__ == "__main__":
-    file = auto_report_for_empirical_threshold_analysis()
+    import geopandas as gpd
+
+    gdf = gpd.read_file("C:\\Users\\Apple\\Desktop\\result.gpkg")
+    print(gdf.head())
+    print(gdf.columns)
+    file = auto_report_for_empirical_threshold_analysis(gdf=gdf)
     save_docx_safely(file, "C:\\Users\\Apple\\Desktop\\AppendixB.docx")

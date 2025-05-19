@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 matplotlib.use("QtAgg")
-from utils.predefined_data import MIM_indicators, Drawing_specifications
+from utils.predefined_data import NIS_indicators, Drawing_specifications
 from core.function_utils import (
     point_dataset_preprocess,
     boundary_file_preprocess,
@@ -57,7 +57,7 @@ H2S_score = {
 }  # unit:ppm
 abnormal_score_config = dict(
     zip(
-        [indicator.value.name for indicator in MIM_indicators],
+        [indicator.value.name for indicator in NIS_indicators],
         [
             Radon_score,
             VOCs_score,
@@ -85,12 +85,12 @@ def calculate_score(
     """
     result = {}
     other_soil_gas = [
-        MIM_indicators.VOCs.value.name,
-        MIM_indicators.CO2.value.name,
-        MIM_indicators.O2.value.name,
-        MIM_indicators.CH4.value.name,
-        MIM_indicators.H2.value.name,
-        MIM_indicators.H2S.value.name,
+        NIS_indicators.VOCs.value.name,
+        NIS_indicators.CO2.value.name,
+        NIS_indicators.O2.value.name,
+        NIS_indicators.CH4.value.name,
+        NIS_indicators.H2.value.name,
+        NIS_indicators.H2S.value.name,
     ]
     other_soil_gas_scores = 0
 
@@ -268,19 +268,6 @@ def Plot_source_zone(gdf, boundary_gdf):
     ]
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
-    # *添加注记(为论文准备)
-    # ax.annotate(
-    #     "(a)",
-    #     xy=(0.03, 0.92),
-    #     xycoords="axes fraction",
-    #     ha="left",
-    #     va="bottom",
-    #     fontsize=20,
-    #     bbox=dict(
-    #         boxstyle="round,pad=0.3", facecolor="white", edgecolor="gray", alpha=0
-    #     ),
-    # )
-    #
     import os
 
     os.makedirs(os.path.dirname("./auto_report_cache"), exist_ok=True)
@@ -468,8 +455,6 @@ from shapely.ops import unary_union
 
 def Score_interpolation(gdf, boundary_gdf, method="linear"):
     try:
-        # 数据预处理
-        gdf.to_csv("gdf.csv")
         boundary = boundary_gdf.copy()
         if gdf.crs != boundary.crs:
             gdf = gdf.to_crs(boundary.crs)

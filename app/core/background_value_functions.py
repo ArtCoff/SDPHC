@@ -7,7 +7,7 @@ from matplotlib.figure import Figure
 
 matplotlib.use("QtAgg")
 
-from utils.predefined_data import MIM_indicators, Drawing_specifications
+from utils.predefined_data import NIS_indicators, Drawing_specifications
 from core.function_utils import (
     add_north_arrow,
     add_scalebar,
@@ -123,7 +123,7 @@ class BackgroundResult:
 def process_background_value_method(gdf):
     results = {}
 
-    for col in [indicator for indicator in MIM_indicators]:
+    for col in [indicator for indicator in NIS_indicators]:
         print(f"Processing {col.value.name}...")
         unit = col.value.unit
         # 处理数据
@@ -158,92 +158,18 @@ def process_background_value_method(gdf):
     return results
 
 
-#! 原始代码
-# 根据标签划分数据
-# labels = kmeans.labels_
-# lower_part = data[labels == np.argmin(centers)].flatten()
-# upper_part = data[labels == np.argmax(centers)].flatten()
-
-# 统计数据点的出现次数
-# data_counts = Counter(data.flatten())
-# 设置全局字体
-# plt.rcParams["font.family"] = "Times New Roman"  # 仿宋
-# plt.rcParams["axes.unicode_minus"] = False  # 正常显示负号
-# # 绘制结果图像
-# plt.figure(figsize=(8, 6), dpi=90)
-
-# for point, count in data_counts.items():
-#     # 分别绘制 lower_part 和 upper_part 的数据点
-#     if point in lower_part:
-#         plt.scatter(
-#             point,
-#             0,
-#             color="blue",
-#             s=50,
-#             label="Part Ⅰ" if point == lower_part[0] else "",
-#         )
-#     if point in upper_part:
-#         plt.scatter(
-#             point,
-#             0,
-#             color="orange",
-#             s=50,
-#             label="Part Ⅱ" if point == upper_part[0] else "",
-#         )
-
-#     # 如果数据点重复，标注数量
-#     if count > 1:
-#         plt.text(
-#             point,
-#             0.005,
-#             f"{count}",
-#             ha="center",
-#             color="black",
-#             fontsize=10,
-#             va="top",
-#         )
-
-
-# # 标注簇中心
-# plt.scatter(
-#     centers, [0, 0], color="red", s=100, marker="x", label="Cluster center"
-# )
-# # 标注分界线
-# plt.axvline(boundary, color="green", linestyle="--", label="Cut-off value")
-# plt.text(
-#     boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=20
-# )
-# # 添加图例和标签
-# plt.legend(fontsize=10, ncol=2)
-# plt.xticks(fontsize=15)
-# plt.yticks([])
-# plt.xlabel(f"{value}({unit})", fontsize=15)
-# if save:
-#     plt.savefig(f"./ref/KMEANS-{value}.png")
-#     return
-# else:
-#     plt.show()
 def calculate_backgroundValue(data, boundarys):
     new_data = data.copy()
     gdf = new_data.get("gdf")
     result_gdf = anomaly_identification(gdf, boundarys)
     anomaly_figs = []
-    # header = [
-    #     "Point ID",
-    #     "Abnormally Low Radon",
-    #     "Abnormally High VOCs",
-    #     "Abnormally High CO2",
-    #     "Abnormally Low O2",
-    #     "Abnormally High CH4",
-    #     "Abnormally High Functional Genes",
-    # ]
     headers = [
-        ("Abnormally Low Radon", MIM_indicators.Radon),
-        ("Abnormally High VOCs", MIM_indicators.VOCs),
-        ("Abnormally High CO2", MIM_indicators.CO2),
-        ("Abnormally Low O2", MIM_indicators.O2),
-        ("Abnormally High CH4", MIM_indicators.CH4),
-        ("Abnormally High Functional Genes", MIM_indicators.FG),
+        ("Abnormally Low Radon", NIS_indicators.Radon),
+        ("Abnormally High VOCs", NIS_indicators.VOCs),
+        ("Abnormally High CO2", NIS_indicators.CO2),
+        ("Abnormally Low O2", NIS_indicators.O2),
+        ("Abnormally High CH4", NIS_indicators.CH4),
+        ("Abnormally High Functional Genes", NIS_indicators.FG),
     ]
     for column, indicator in headers:
         anomaly_figs.append(
@@ -257,96 +183,87 @@ def calculate_backgroundValue(data, boundarys):
                 ),
             ),
         )
-    # result_gdf["点位"] = result_gdf["Point_ID"]
     result_gdf["Point ID"] = result_gdf["Point_ID"]
     new_data["gdf"] = result_gdf
     new_data["anomaly_figs"] = anomaly_figs
     return new_data
-    # pass
 
 
 def anomaly_identification(gdf, boundarys):
-
-    # gdf["氡气异常低"] =
-    gdf["Abnormally Low Radon"] = gdf[MIM_indicators.Radon.value.name].apply(
+    gdf["Abnormally Low Radon"] = gdf[NIS_indicators.Radon.value.name].apply(
         lambda x: (
             "×"
             if x is not None
-            and x > boundarys.get(MIM_indicators.Radon)  # 大于阈值时赋值为 1
+            and x > boundarys.get(NIS_indicators.Radon)  # 大于阈值时赋值为 1
             else (
                 "√"
                 if x is not None
-                and x <= boundarys.get(MIM_indicators.Radon)  # 小于或等于阈值时赋值为 0
+                and x <= boundarys.get(NIS_indicators.Radon)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    # gdf["VOCs异常高"]
-    gdf["Abnormally High VOCs"] = gdf[MIM_indicators.VOCs.value.name].apply(
+    gdf["Abnormally High VOCs"] = gdf[NIS_indicators.VOCs.value.name].apply(
         lambda x: (
             "√"
             if x is not None
-            and x > boundarys.get(MIM_indicators.VOCs)  # 大于阈值时赋值为 1
+            and x > boundarys.get(NIS_indicators.VOCs)  # 大于阈值时赋值为 1
             else (
                 "×"
                 if x is not None
-                and x <= boundarys.get(MIM_indicators.VOCs)  # 小于或等于阈值时赋值为 0
+                and x <= boundarys.get(NIS_indicators.VOCs)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    # gdf["O2异常低"]
-    gdf["Abnormally Low O2"] = gdf[MIM_indicators.O2.value.name].apply(
+    gdf["Abnormally Low O2"] = gdf[NIS_indicators.O2.value.name].apply(
         lambda x: (
             "×"
             if x is not None
-            and x > boundarys.get(MIM_indicators.O2)  # 大于阈值时赋值为 1
+            and x > boundarys.get(NIS_indicators.O2)  # 大于阈值时赋值为 1
             else (
                 "√"
                 if x is not None
-                and x <= boundarys.get(MIM_indicators.O2)  # 小于或等于阈值时赋值为 0
+                and x <= boundarys.get(NIS_indicators.O2)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    # gdf["CO2异常高"]
-    gdf["Abnormally High CO2"] = gdf[MIM_indicators.CO2.value.name].apply(
+    gdf["Abnormally High CO2"] = gdf[NIS_indicators.CO2.value.name].apply(
         lambda x: (
             "√"
             if x is not None
-            and x >= boundarys.get(MIM_indicators.CO2)  # 大于阈值时赋值为 1
+            and x >= boundarys.get(NIS_indicators.CO2)  # 大于阈值时赋值为 1
             else (
                 "×"
                 if x is not None
-                and x < boundarys.get(MIM_indicators.CO2)  # 小于或等于阈值时赋值为 0
+                and x < boundarys.get(NIS_indicators.CO2)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    # gdf["CH4异常高"]
-    gdf["Abnormally High CH4"] = gdf[MIM_indicators.CH4.value.name].apply(
+    gdf["Abnormally High CH4"] = gdf[NIS_indicators.CH4.value.name].apply(
         lambda x: (
             "√"
             if x is not None
-            and x >= boundarys.get(MIM_indicators.CH4)  # 大于阈值时赋值为 1
+            and x >= boundarys.get(NIS_indicators.CH4)  # 大于阈值时赋值为 1
             else (
                 "×"
                 if x is not None
-                and x < boundarys.get(MIM_indicators.CH4)  # 小于或等于阈值时赋值为 0
+                and x < boundarys.get(NIS_indicators.CH4)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
     )
-    # gdf["功能基因异常高"]
-    gdf["Abnormally High Functional Genes"] = gdf[MIM_indicators.FG.value.name].apply(
+    gdf["Abnormally High Functional Genes"] = gdf[NIS_indicators.FG.value.name].apply(
         lambda x: (
             "√"
             if x is not None
-            and x >= boundarys.get(MIM_indicators.FG)  # 大于阈值时赋值为 1
+            and x >= boundarys.get(NIS_indicators.FG)  # 大于阈值时赋值为 1
             else (
                 "×"
                 if x is not None
-                and x < boundarys.get(MIM_indicators.FG)  # 小于或等于阈值时赋值为 0
+                and x < boundarys.get(NIS_indicators.FG)  # 小于或等于阈值时赋值为 0
                 else "⚪"
             )
         )
@@ -425,14 +342,6 @@ def backgroundValue_anomaly_fig(
     ax.legend(
         handles=legend_elements,
     )
-    #
-    # fig.savefig(
-    #     Path("./auto_report_cache") / f"{label}.png",
-    #     dpi=300,
-    #     bbox_inches="tight",
-    #     pad_inches=0.1,
-    # )
-    #
     return fig
 
 
@@ -540,4 +449,4 @@ def 绘制点位分布(gdf, boundary_polygon_file=None):
         )
     )
     plt.tight_layout()
-    plt.savefig("./ref/监测点位分布图.png")
+    # plt.savefig("./ref/监测点位分布图.png")

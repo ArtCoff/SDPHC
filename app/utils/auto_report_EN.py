@@ -7,6 +7,8 @@ from docx.shared import Inches, Pt, Cm, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
 from docx.enum.section import WD_SECTION
 from docx.oxml.ns import qn
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 
 
 def is_file_locked(file_path):
@@ -162,7 +164,9 @@ def add_pic_header(doc, text):
     return paragraph
 
 
-def insert_image(doc, image_path, width=None, height=None):
+def insert_image(
+    doc, image_path, width=None, height=None, figure_title=None, legend=None
+):
     """
     插入图片，并支持设置宽度和高度，图片默认居中显示。
 
@@ -173,6 +177,9 @@ def insert_image(doc, image_path, width=None, height=None):
     """
     if not Path(image_path).exists():
         print(f"图片路径无效：{image_path}")
+        error_message = doc.add_paragraph()
+        run = error_message.add_run("Invalid image path: " + str(image_path))
+        run.font.color.rgb = RGBColor(255, 0, 0)
         return
     # 创建段落
     paragraph = doc.add_paragraph()
@@ -192,6 +199,98 @@ def insert_image(doc, image_path, width=None, height=None):
 
     # 设置图片所在段落居中
     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # 居中显示图片
+    if figure_title:
+        # 插入图片标题
+        title_paragraph = doc.add_paragraph(figure_title)
+        title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = title_paragraph.runs[0]
+        run.bold = True
+        run.font.size = Pt(12)
+    if legend:
+        # 插入图片说明
+        legend_paragraph = doc.add_paragraph(legend)
+        legend_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = legend_paragraph.runs[0]
+        run.font.size = Pt(10)
+        run.font.name = "Times New Roman"
+
+
+def add_table(doc, df, table_title=None):
+    """
+    将 pandas DataFrame 插入到 Word 文档中，作为表格。
+
+    参数:
+    - doc: python-docx Document 对象
+    - df: pandas DataFrame，用于生成表格
+    - table_title: 可选，表格标题（居中显示在表格上方）
+    """
+    # 插入表格标题（如果存在）
+    if table_title:
+        title_paragraph = doc.add_paragraph(table_title)
+        title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = title_paragraph.runs[0]
+        run.bold = True
+        run.font.size = Pt(12)
+        # 检查第一行是否与列名相同（防止重复标题行）
+    skip_first_row = False
+    if not df.empty and len(df) > 1:
+        first_row = df.iloc[0].astype(str).str.strip().str.lower()
+        columns = df.columns.astype(str).str.strip().str.lower()
+        if all(first_row == columns):
+            skip_first_row = True
+            df = df.iloc[1:].reset_index(drop=True)
+    # 插入表格
+    table = doc.add_table(rows=df.shape[0] + 1, cols=df.shape[1])
+    table.style = "Table Grid"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER  # 整个表格居中
+    # table.autofit = False  # 禁用自动适应，便于手动调整宽度
+
+    # 填充表头
+    for j, col in enumerate(df.columns):
+        cell = table.cell(0, j)
+        cell.text = str(col)
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # 填充数据行
+    for i, (index, row) in enumerate(df.iterrows()):
+        for j, value in enumerate(row):
+            cell = table.cell(i + 1, j)
+            cell.text = str(value)
+            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    return table
+
+
+def add_bullet_list(doc, items, list_title=None, alignment="left"):
+    """
+    将字符串列表插入 Word 文档，格式化为项目符号列表（Bullet List）。
+
+    参数:
+    - doc: python-docx Document 对象
+    - items: 字符串列表（如 ["Item 1", "Item 2", ...]）
+    - list_title: 可选，列表标题（居中显示在列表上方）
+    - alignment: 列表对齐方式 ("left", "center", "right")
+    """
+    # 插入列表标题（如果存在）
+    if list_title:
+        title_paragraph = doc.add_paragraph(list_title)
+        if alignment == "center":
+            title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        elif alignment == "right":
+            title_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        else:
+            title_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+    # 插入列表项
+    for item in items:
+        paragraph = doc.add_paragraph(style="List Bullet")
+        paragraph.add_run(str(item))
+        if alignment == "center":
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        elif alignment == "right":
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        else:
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
 
 def setup_styles(doc):
@@ -304,7 +403,7 @@ def add_cover(doc):
     return doc
 
 
-def auto_report_EN():
+def report_test():
     # 创建文档
     doc = Document()
     # 设置默认样式
@@ -410,5 +509,5 @@ def auto_report_EN():
 
 
 if __name__ == "__main__":
-    file = auto_report_EN()
+    file = report_test()
     file.save("auto_report.docx")
