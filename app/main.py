@@ -29,7 +29,7 @@ class start_window(QWidget):
         self.initUI()
         self.attribute_window_factory = {
             Methods.Empirical_Threshold_Analysis: Attribute_Window,
-            Methods.Background_Value_Analysis: Attribute_Window_BackgroundValue,
+            Methods.Background_Level_Analysis: Attribute_Window_BackgroundValue,
             Methods.Principal_Component_Analysis: Attribute_Window_PCA,
         }
         self.current_attribute_window = None
@@ -49,13 +49,13 @@ class start_window(QWidget):
 
         #!
         # self.outline_dataset.setText(
-        #     r"C:\Users\Apple\Desktop\MIM\tests\JN_boundary.gpkg"
+        #     r"C:\Users\Apple\Desktop\SDPHC\tests\JN_boundary.gpkg"
         # )
-        # self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\JN_NIS.gpkg")
+        # self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\JN_NIS.gpkg")
         self.outline_dataset.setText(
-            r"C:\Users\Apple\Desktop\MIM\tests\LX_boundary.gpkg"
+            r"C:\Users\Apple\Desktop\SDPHC\tests\LX_boundary.gpkg"
         )
-        self.point_dataset.setText(r"C:\Users\Apple\Desktop\MIM\tests\LX_NIS.gpkg")
+        self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\LX_NIS.gpkg")
         #!
         form_layout = QFormLayout()
         form_layout.addRow(self.tr("Boundary File:"), self.outline_dataset)

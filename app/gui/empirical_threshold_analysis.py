@@ -8,22 +8,25 @@ from PySide6.QtWidgets import (
     QPushButton,
     QFileDialog,
     QVBoxLayout,
-    QHBoxLayout,
     QFormLayout,
-    QGridLayout,
 )
-from core.function_utils import (
+
+from core import (
+    calculate_ExperienceValueMethod_scores,
     plot_basic_info,
     read_file_columns,
 )
-from core.empirical_threshold_functions import calculate_ExperienceValueMethod_scores
-from utils.predefined_data import (
+from utils import (
     Software_info,
     NIS_indicators,
     Methods,
-    Secondary_Functions_of_ExperienceValue,
+    AppStyle,
+    Secondary_Functions_of_ETA,
+    center_window,
+    show_multiple_plots,
 )
-from gui.custom_controls import (
+from report_templates import auto_report_for_empirical_threshold_analysis
+from .custom_controls import (
     next_btn,
     help_btn,
     WrapButton,
@@ -31,10 +34,6 @@ from gui.custom_controls import (
     GeoDataFrameModel,
     bottom_buttons,
     LoadingWindow,
-)
-from utils.pyside6_utils import center_window, show_multiple_plots, AppStyle
-from report_templates.report_template_1 import (
-    auto_report_for_empirical_threshold_analysis,
 )
 
 
@@ -69,7 +68,7 @@ class Attribute_Window(QWidget):
     def initUI(self, options):
         self.setWindowTitle(Software_info.software_name.value)
         self.resize(500, 300)
-        # self.setMinimumSize(400, 300)
+        self.setMinimumSize(400, 300)
         self.setWindowIcon(AppStyle.icon())
         self.plot_dataset_info_btn = QPushButton(
             self.tr("Displays an overview of the data")
@@ -86,7 +85,7 @@ class Attribute_Window(QWidget):
         total_layout.addWidget(self.plot_dataset_info_btn)
         total_layout.addLayout(self.form_layout)
         total_layout.addWidget(self.bottom_buttons)
-        # * 添加combox
+        # * add combox
         self.combos = []
         self.combos.append(CustomComboBox(options, attribute="Point_ID"))
         self.form_layout.addRow("Point ID:", self.combos[0])
@@ -176,7 +175,7 @@ class Contamination_identification_win(QWidget):
         self.setWindowTitle(Software_info.software_name.value)
         self.setWindowIcon(AppStyle.icon())
         self.resize(500, 300)
-        # self.setMinimumSize(400, 200)
+        self.setMinimumSize(400, 200)
 
         self.function1_btn = WrapButton(
             self.tr("Pollution exceedance points (except radon gas)")
@@ -188,7 +187,7 @@ class Contamination_identification_win(QWidget):
         self.function5_btn = WrapButton(self.tr("Pollution level identification"))
         self.auto_report_btn = WrapButton(self.tr("Auto report"))
 
-        # 功能连接
+        # function connections
         self.function1_btn.clicked.connect(self.function_PCP)
         self.function2_btn.clicked.connect(self.function_PSA)
         self.function4_btn.clicked.connect(self.function_SOC)
@@ -220,7 +219,7 @@ class Contamination_identification_win(QWidget):
                 "H2S_Score",
                 "The_other_soil_gas_scores",
             ],
-            funtion_name=Secondary_Functions_of_ExperienceValue.function_PCP,
+            funtion_name=Secondary_Functions_of_ETA.function_PCP,
         )
         self.result_win1.show()
 
@@ -237,7 +236,7 @@ class Contamination_identification_win(QWidget):
                 "Radon_Score",
                 "All_indicators_Scores",
             ],
-            funtion_name=Secondary_Functions_of_ExperienceValue.function_PSA,
+            funtion_name=Secondary_Functions_of_ETA.function_PSA,
         )
         self.result_win2.show()
 
@@ -250,7 +249,7 @@ class Contamination_identification_win(QWidget):
                 "The_other_soil_gas_scores",
                 "Scope_of_contamination",
             ],
-            funtion_name=Secondary_Functions_of_ExperienceValue.function_SOC,
+            funtion_name=Secondary_Functions_of_ETA.function_SOC,
         )
         self.result_win4.show()
 
@@ -363,17 +362,17 @@ class function_win(QWidget):
                 )
 
     def plot_data(self):
-        if self.function_name == Secondary_Functions_of_ExperienceValue.function_PSA:
+        if self.function_name == Secondary_Functions_of_ETA.function_PSA:
             try:
                 show_multiple_plots(self.result_dict.get("source_fig"))
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
-        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_SOC:
+        elif self.function_name == Secondary_Functions_of_ETA.function_SOC:
             try:
                 show_multiple_plots(self.result_dict.get("scope_fig"))
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to plot data: {str(e)}")
-        elif self.function_name == Secondary_Functions_of_ExperienceValue.function_PCP:
+        elif self.function_name == Secondary_Functions_of_ETA.function_PCP:
             try:
                 show_multiple_plots(self.result_dict.get("exceed_fig"))
             except Exception as e:

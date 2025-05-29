@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 matplotlib.use("QtAgg")
-from utils.predefined_data import NIS_indicators, Drawing_specifications
-from core.function_utils import (
+from utils import NIS_indicators, Drawing_specifications
+from .function_utils import (
     point_dataset_preprocess,
     boundary_file_preprocess,
     safe_remove,
@@ -17,7 +17,7 @@ from core.function_utils import (
 
 
 # * Experience Value Method
-# Monitoring_indicators = [
+# NIS_indicators = [
 #     "Radon",
 #     "VOCs",
 #     "CO2",

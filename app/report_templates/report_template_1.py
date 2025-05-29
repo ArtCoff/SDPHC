@@ -76,7 +76,7 @@ def add_executive_summary(doc):
         "A Non-Invasive Survey (NIS) was conducted at the XXX industrial site to characterize LNAPL contamination from historical petroleum storage tank leaks. Key findings include:"
     )
     objectives = [
-        "Contaminant Source Zone: Identified in the northern quadrant (Area A) via elevated VOCs (benzene up to 850 ppb) and radon-deficit zones.",
+        "Contaminant Source Zone: Identified in the northern quadrant (Area A) via elevated VOCs (benzene up to 800 ppb) and radon-deficit zones.",
         "Pollution Extent: TPH (C6-C40) contamination spans 2.5 ha, with groundwater plume migration southwestward (Fig. 3).",
         "Biogeochemical Indicators: High *alkB* gene abundance (up to 1.2×10⁶ copies/g soil) confirms active hydrocarbon degradation.",
         "Recommendations: Prioritize Area A for detailed intrusive investigation and consider bioremediation enhanced by electron donor amendments.",
@@ -203,13 +203,6 @@ def add_methodology_section(doc):
         "Frequency: Bi-weekly measurements during survey period.",
     ]
     add_bullet_list(doc, items=content)
-    co2o2_paragraph = doc.add_paragraph()
-    co2o2_paragraph.add_run("Interpretation: ").bold = True
-    content = [
-        r"O₂ <5% and CO₂ >3% indicate active aerobic hydrocarbon degradation.",
-        r"CO₂/O₂ molar ratio >1.5 suggests enhanced organic carbon mineralization.",
-    ]
-    add_bullet_list(doc, items=content)
     # H2S/CH4 测量
     doc.add_heading("5.1.3 H₂S and CH₄ Detection", level=3)
     h2sch4_paragraph = doc.add_paragraph()
@@ -224,13 +217,6 @@ def add_methodology_section(doc):
     content = [
         "Soil gas sampling depth: 0.5 m using stainless steel probes.",
         "Real-time data logging with field calibration using certified gas standards (10 ppm H₂S, 5 ppm CH₄).",
-    ]
-    add_bullet_list(doc, items=content)
-    h2sch4_paragraph = doc.add_paragraph()
-    h2sch4_paragraph.add_run("Interpretation: ").bold = True
-    content = [
-        "H₂S >50 ppm correlates with sulfate-reducing pathways."
-        "CH₄ >100 ppm indicates methanogenic activity (prmA gene dominance)."
     ]
     add_bullet_list(doc, items=content)
     doc.add_heading("5.1.4 Biogeochemical Indicators", level=3)
@@ -250,12 +236,6 @@ def add_methodology_section(doc):
     p = doc.add_paragraph()
     p.add_run("Technique: ").bold = True
     p.add_run("AlphaGuard radon detector for near-surface ²²²Rn activity (Bq/m³).")
-    p = doc.add_paragraph()
-    p.add_run("Interpretation: ").bold = True
-    p.add_run(
-        "Background 25–30 Bq/m³; deficit zones (<10 Bq/m³) indicate NAPL presence."
-    )
-
     doc.add_page_break()
 
 
@@ -272,9 +252,10 @@ def add_results_section(doc, gdf):
         image_path=Path(project_root) / "assets/figs/NIS_point.jpg",
         width=10,
         figure_title="Figure 2: Sampling Point Distribution",
-        legend="Legend: Dots = NIS survey point; Red triangles = Park Boundary",
+        legend="Legend: Dots = NIS survey point; Black closed polygon = Park Boundary",
     )
     nis_data = gdf[["point_code", "VOCs", "O2", "CO2", "CH4", "H2S"]].copy()
+    radon_data = gdf[["point_code", "Radon"]].copy().dropna()
     exceed_data = gdf[gdf["The_other_soil_gas_scores"] >= 6].copy()
     exceed_data = exceed_data[
         [
@@ -289,14 +270,19 @@ def add_results_section(doc, gdf):
         ]
     ]
     doc.add_paragraph(
-        "Table 1 summarizes the volatile organic compound (VOC) concentrations measured across 45 sampling points using Non-Invasive Survey (NIS) techniques. Key pollutants include benzene, toluene, formaldehyde (HCHO), and PID response values. The data reveals a maximum benzene concentration of 850 ppb at sampling point S-08, exceeding the California Department of Toxic Substances Control (DTSC) vapor intrusion threshold of 10 ppb by 85-fold . Toluene concentrations up to 620 ppb were also observed in the northern quadrant of the site (Area A), correlating with elevated PID readings (2100 arbitrary units). These findings indicate localized LNAPL (light non-aqueous phase liquid) contamination, with active volatilization of aromatic hydrocarbons."
+        "Table 1 presents the NIS sampling data from the chemical industrial park, comprising 149 sampling points. The monitored parameters include volatile organic compounds (VOCs), oxygen (O₂), carbon dioxide (CO₂), methane (CH₄), and hydrogen sulfide (H₂S), among others. The radon gas sampling data are shown in Table 2."
     )
     add_table(doc, df=nis_data, table_title="Table 1: NIS survey points data")
+    add_table(
+        doc,
+        df=radon_data,
+        table_title="Table 2: Radon gas sampling data",
+    )
     doc.add_heading("6.2 Analysis results", level=2)
     doc.add_paragraph(
         "An empirical threshold analysis was conducted to identify sampling points exceeding regulatory benchmarks (Fig. 1). Using EPA Risk Screening Levels (RSLs) for benzene (0.1 ppb) and DTSC thresholds (10 ppb for soil gas), 12 out of 45 points (26.7%) were classified as high-risk zones. Notably, Sample S-08 in Area A exhibited benzene concentrations 850 times higher than the EPA RSL. Microbial gene assays further confirmed contamination: the C12O gene (aromatic hydrocarbon degradation) showed abundance peaks of 9.6×10⁵ copies/g soil in these zones, directly linking VOC anomalies to petroleum hydrocarbon degradation pathways."
     )
-    add_table(doc, df=exceed_data, table_title="Table 2: Exceedance points")
+    add_table(doc, df=exceed_data, table_title="Table 3: Exceedance points")
     doc.add_paragraph()
     doc.add_paragraph(
         "Fig.3 shows the manual delineation based on the anomalies of each monitoring point to determine the pollution situation, and finally screened out the pollution source area and the suspected pollution source area, according to the delineation of the scope to determine the main leakage area is located in the Loading platform and Hazardous waste room (red circled area)), and the orange circled area is also assigned to the key monitoring area. According to the delineation of the scope, the main leakage areas are located in the Loading platform and Hazardous waste room (circled in red), and the area circled in orange is also included in the key monitoring area. Fig.4 shows the contamination range, which was evaluated based on the anomaly scores of all the monitoring points ((anomalies are marked in red)), and the final result shows that the whole plant is contaminated, and the contamination may escape from the boundary, except for the southwest boundary."
@@ -435,7 +421,7 @@ def auto_report_for_empirical_threshold_analysis(gdf=None):
 if __name__ == "__main__":
     import geopandas as gpd
 
-    gdf = gpd.read_file("C:\\Users\\Apple\\Desktop\\result.gpkg")
+    gdf = gpd.read_file("C:\\Users\\Apple\\Desktop\\SDPHC\\tests\\LX_ETA.gpkg")
     print(gdf.head())
     print(gdf.columns)
     file = auto_report_for_empirical_threshold_analysis(gdf=gdf)

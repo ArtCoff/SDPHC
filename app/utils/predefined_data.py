@@ -7,7 +7,7 @@ current_dir = Path(__file__).parent
 class Software_info(Enum):
     software_name = "Software for Detecting Petroleum Hydrocarbons Contamination"
     software_short_name = "SDPHC"
-    software_name_chinese = "地下水LNAPL污染调查分析软件"
+    software_name_chinese = "微扰动污染调查分析软件"
     software_version = "1.0.0"
     software_author = "Hefei University of Technology"
     software_email = ""
@@ -20,11 +20,11 @@ class Drawing_specifications:
 
 class Methods(Enum):
     Empirical_Threshold_Analysis = "Empirical Threshold Analysis"
-    Background_Value_Analysis = "Background Value Analysis"
+    Background_Level_Analysis = "Background Level Analysis"
     Principal_Component_Analysis = "Principal Component Analysis"
 
 
-class Secondary_Functions_of_ExperienceValue(Enum):
+class Secondary_Functions_of_ETA(Enum):
     function_PCP = "Pollution exceedance points"  # "指示污染超标范围点位（除氡气）"
     function_PSA = "Pollution source area"  # "污染源区与疑似污染源区"
     function_SOC = "Scope of contamination"  # "污染范围"

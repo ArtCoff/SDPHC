@@ -1,4 +1,3 @@
-from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThread, Slot
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QMessageBox,
@@ -11,28 +10,28 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
 )
-from gui.empirical_threshold_analysis import Attribute_Window
-from core.function_utils import (
+from PySide6.QtCore import Qt, QAbstractTableModel, Signal, QThread, Slot
+from core import (
     read_file_columns,
     point_dataset_preprocess,
-)
-from core.background_value_functions import (
     process_background_value_method,
     calculate_backgroundValue,
 )
-from utils.predefined_data import Software_info, NIS_indicators
-from gui.custom_controls import (
+from utils import (
+    AppStyle,
+    NIS_indicators,
+    center_window,
+    traverse_layout,
+    show_multiple_plots,
+    report_test as auto_report,
+)
+
+from .custom_controls import (
     background_value_input_doublespinbox,
     bottom_buttons,
     LoadingWindow,
 )
-from utils.pyside6_utils import (
-    AppStyle,
-    center_window,
-    traverse_layout,
-    show_multiple_plots,
-)
-from utils.auto_report_EN import report_test as auto_report
+from .empirical_threshold_analysis import Attribute_Window
 
 
 class backgroundValue_worker(QThread):

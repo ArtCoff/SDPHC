@@ -16,8 +16,8 @@ from gui.custom_controls import (
     LoadingWindow,
     WrapButton,
 )
-from utils.pyside6_utils import center_window, show_multiple_plots, AppStyle
-from core.principal_component_functions import return_PCA_results
+from utils import center_window, show_multiple_plots, AppStyle
+from core import return_PCA_results
 
 
 class PCA_worker(QThread):

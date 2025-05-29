@@ -7,8 +7,8 @@ from matplotlib.figure import Figure
 
 matplotlib.use("QtAgg")
 
-from utils.predefined_data import NIS_indicators, Drawing_specifications
-from core.function_utils import (
+from utils import NIS_indicators, Drawing_specifications
+from .function_utils import (
     add_north_arrow,
     add_scalebar,
 )
