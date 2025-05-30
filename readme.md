@@ -17,7 +17,7 @@ Instructions for using the software can be found in the docs directory.
 (1) In order to run and edit the project properly, you should first clone the project locally: run
 
 ```bash
-git clone https://github.com/yourusername/yourproject.git
+git clone https://github.com/ArtCoff/SDPHC.git
 ```
 
 (2) Build your python environment from the requirements.yml in your project, using conda is recommended, you can start by editing the first line of the file and changing the name parameter to create an appropriate virtual environment name. Then run
@@ -27,4 +27,5 @@ conda env create -f requirements.yml
 ```
 
 Of course you can build your own python environment, there is no mandatory dependency on python version.
+
 (3) Just run the main.py file in the app directory.
