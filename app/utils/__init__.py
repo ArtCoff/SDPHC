@@ -21,8 +21,10 @@ from .interpolation_utils import (
 from .auto_report_EN import (
     save_docx_safely,
     insert_image,
+    setup_styles,
     add_cover,
     add_bullet_list,
     add_table,
+    add_note,
     report_test,
 )

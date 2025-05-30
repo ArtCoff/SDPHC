@@ -10,9 +10,11 @@ __pycache__/
 auto_report_cache/
 app/.mypy_cache/
 app/cache/
+cache/
 
 # 忽略临时文件夹（递归匹配所有子目录中的 tmp 文件夹）
 **/tmp
+**/cache
 
 # 忽略特定文件
 .env

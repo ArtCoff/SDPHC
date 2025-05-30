@@ -257,8 +257,24 @@ def add_table(doc, df, table_title=None):
             cell = table.cell(i + 1, j)
             cell.text = str(value)
             cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    count = df.shape[0] if not skip_first_row else df.shape[0] - 1
+    return count
 
-    return table
+
+def add_note(doc, text):
+    """
+    在 Word 文档中添加注释段落。
+
+    参数:
+    - doc: python-docx Document 对象
+    - text: 注释内容
+    """
+    paragraph = doc.add_paragraph(text)
+    run = paragraph.runs[0]
+    run.font.name = "Times New Roman"  # 设置字体为 Times New Roman
+    run.font.size = Pt(10)  # 设置字号为 10 磅
+    run.font.italic = True  # 使用 Normal 样式
+    # run.font.color.rgb = RGBColor(128, 128, 128)  # 设置字体颜色为灰色
 
 
 def add_bullet_list(doc, items, list_title=None, alignment="left"):

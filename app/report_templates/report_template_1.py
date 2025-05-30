@@ -1,37 +1,24 @@
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx import Document
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_SECTION
 from pathlib import Path
 from PIL import Image
 from datetime import datetime
-
-#
-import os
-import sys
 import pandas as pd
-import geopandas as gpd
-
-# 获取当前脚本所在目录的上一级目录（即项目根目录）
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(project_root)
-from utils.auto_report_EN import (
+from utils import (
     add_table,
+    add_note,
     add_bullet_list,
     insert_image,
     setup_styles,
     save_docx_safely,
 )
 
-print(f"Project root directory: {project_root}")
-print(f"Current script directory: {Path.cwd()}")
-cache_dir = Path(project_root) / "cache"
-if not cache_dir.exists():
-    cache_dir.mkdir(parents=True)
+report_cache = Path.cwd() / "cache"
+print(f"Report cache directory: {report_cache}")
 
 
-# 添加封面
+# cover page content
 def add_cover_page(doc):
     for _ in range(6):  # 根据页面长度适当调整数量
         i = doc.add_paragraph()
@@ -42,7 +29,7 @@ def add_cover_page(doc):
     )
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     subtitle = doc.add_paragraph(
-        "Case Study: LNAPL Characterization at XXX Industrial Site"
+        "Case Study: Contamination  Characterization at XXX Industrial Site"
     )
     subtitle.style = "Subtitle"
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -53,7 +40,7 @@ def add_cover_page(doc):
         WD_ALIGN_PARAGRAPH.RIGHT
     )
     now = datetime.now()
-    date_str = f"{now.strftime('%B')} {now.day}, {now.year}"  # 去除日期前导零
+    date_str = f"{now.strftime('%B')} {now.day}, {now.year}"
     doc.add_paragraph(f"Date: {date_str}").alignment = WD_ALIGN_PARAGRAPH.RIGHT
     doc.add_page_break()
 
@@ -69,15 +56,15 @@ def add_Disclaimer(doc):
     doc.add_page_break()
 
 
-# 添加执行摘要
+# executive summary content
 def add_executive_summary(doc):
     doc.add_heading("1. Executive Summary", level=1)
     doc.add_paragraph(
-        "A Non-Invasive Survey (NIS) was conducted at the XXX industrial site to characterize LNAPL contamination from historical petroleum storage tank leaks. Key findings include:"
+        "A Non-Invasive Survey (NIS) was conducted at the XXX industrial site to characterize Contamination  contamination from historical petroleum storage tank leaks. Key findings include:"
     )
     objectives = [
         "Contaminant Source Zone: Identified in the northern quadrant (Area A) via elevated VOCs (benzene up to 800 ppb) and radon-deficit zones.",
-        "Pollution Extent: TPH (C6-C40) contamination spans 2.5 ha, with groundwater plume migration southwestward (Fig. 3).",
+        "contamination Extent: Based on the results of the analysis, it was ultimately determined that all areas of the park were classified as contaminated..",
         "Biogeochemical Indicators: High *alkB* gene abundance (up to 1.2×10⁶ copies/g soil) confirms active hydrocarbon degradation.",
         "Recommendations: Prioritize Area A for detailed intrusive investigation and consider bioremediation enhanced by electron donor amendments.",
     ]
@@ -86,20 +73,20 @@ def add_executive_summary(doc):
     doc.add_page_break()
 
 
-# 添加引言章节（第2节）
+# 添加引言章节
 def add_introduction_section(doc):
     doc.add_heading("2. Introduction", level=1)
 
     # 背景
     doc.add_heading("2.1 Background", level=2)
     doc.add_paragraph(
-        "The XXX industrial site, located at 40°N, 75°W, operated as a petroleum storage facility from 2003. Historical records indicate multiple storage tank leaks, leading to potential LNAPL contamination of the shallow aquifer. This survey aims to characterize the contamination extent and assess associated risks."
+        "The XXX industrial site, located at 40°N, 75°W, operated as a petroleum storage facility from 2003. Historical records indicate multiple storage tank leaks, leading to potential Contamination  contamination of the shallow aquifer. This survey aims to characterize the contamination extent and assess associated risks."
     )
 
     # 调查目标
     doc.add_heading("2.2 Objectives", level=2)
     objectives = [
-        "Map LNAPL source zones and subsurface distribution.",
+        "Map Contamination  source zones and subsurface distribution.",
         "Quantify VOC fluxes and biogeochemical degradation indicators.",
         "Assess risks to groundwater receptors and nearby residential areas.",
     ]
@@ -144,6 +131,10 @@ def add_site_description_section(doc):
 
     # 水文地质
     doc.add_heading("4.2 Hydrogeology", level=2)
+    add_note(
+        doc,
+        "The actual groundwater depth, flow direction, flow field, and other specific information for this park is not disclosed at this time, and the actual report can be found below.",
+    )
     hydrogeology = [
         "Shallow unconfined aquifer at depths of 3–8 meters.",
         "Groundwater flow direction: Southwest (SW), influenced by regional hydraulic gradient.",
@@ -170,14 +161,22 @@ def add_methodology_section(doc):
     doc.add_paragraph(
         "The NIS approach integrates multi-parameter monitoring and biogeochemical mechanism analysis, as illustrated in Fig. 1."
     )
+    doc.add_paragraph(
+        "Petroleum hydrocarbon contamination leaks to the soil, transfers from the vadose zone to the groundwater body, and undergoes transport diffusion with groundwater flow. The contaminants continue to degrade naturally during a variety of biogeochemical reactions. By monitoring multiple gas fluxes (e.g., VOC, CO2, O2, CH4, etc.) near the surface, combined with functional gene analysis, radon analysis can be used to inversely infer the core area of subsurface contamination and the extent of contaminant diffusion."
+    )
     insert_image(
         doc=doc,
-        image_path=Path(project_root) / "assets/figs/conceptFig.png",
+        image_path=report_cache / "conceptFig.png",
         width=12,
         figure_title="Figure 1: NIS Conceptual Framework",
     )
-    # 子章节 5.1.1
-    doc.add_heading("5.1.1 VOC Flux Monitoring", level=3)
+    # 子章节
+    doc.add_heading("5.2 Non-Invasive Survey Measurement Methods", level=2)
+    add_note(
+        doc,
+        "NIS contains a variety of measurements, and the following is a brief description of some of the measurements involved.Specific technical parameters have not been verified, the following content is provided as a sample.",
+    )
+    doc.add_heading("5.2.1 VOC Flux Monitoring", level=3)
     p = doc.add_paragraph()
     p.add_run("Instrument: ").bold = True
     p.add_run(
@@ -188,7 +187,7 @@ def add_methodology_section(doc):
     p.add_run(
         "Grid spacing 20 m × 20 m; soil gas sampling depth 0.5 m using stainless steel probes."
     )
-    doc.add_heading("5.1.2 CO₂/O₂ Flux Monitoring", level=3)
+    doc.add_heading("5.2.2 CO₂/O₂ Flux Monitoring", level=3)
     # CO2/O2 测量
     co2o2_paragraph = doc.add_paragraph()
     co2o2_paragraph.add_run("Instrument: ").bold = True
@@ -204,7 +203,7 @@ def add_methodology_section(doc):
     ]
     add_bullet_list(doc, items=content)
     # H2S/CH4 测量
-    doc.add_heading("5.1.3 H₂S and CH₄ Detection", level=3)
+    doc.add_heading("5.2.3 H₂S and CH₄ Detection", level=3)
     h2sch4_paragraph = doc.add_paragraph()
     h2sch4_paragraph.add_run("Instrument: ").bold = True
     content = [
@@ -219,7 +218,7 @@ def add_methodology_section(doc):
         "Real-time data logging with field calibration using certified gas standards (10 ppm H₂S, 5 ppm CH₄).",
     ]
     add_bullet_list(doc, items=content)
-    doc.add_heading("5.1.4 Biogeochemical Indicators", level=3)
+    doc.add_heading("5.2.4 Biogeochemical Indicators", level=3)
     p = doc.add_paragraph()
     p.add_run("Gas Analysis: ").bold = True
     doc.add_paragraph(
@@ -230,9 +229,7 @@ def add_methodology_section(doc):
     doc.add_paragraph(
         " qPCR targeting C12O (aromatic hydrocarbon degradation), alkB (alkane oxidation), and prmA (methanogenesis/methylamine utilization)."
     )
-
-    # 子章节 5.1.3
-    doc.add_heading("5.1.5 Radon Deficit Mapping", level=3)
+    doc.add_heading("5.2.5 Radon Deficit Mapping", level=3)
     p = doc.add_paragraph()
     p.add_run("Technique: ").bold = True
     p.add_run("AlphaGuard radon detector for near-surface ²²²Rn activity (Bq/m³).")
@@ -244,12 +241,12 @@ def add_results_section(doc, gdf):
     doc.add_heading("6. Results and Data Analysis", level=1)
     doc.add_heading("6.1 NIS survey", level=2)
     doc.add_paragraph(
-        "The northern portion of the park contains the main production facilities (e.g., distillation and oxygenation workshops), while the southern portion includes storage, electrical, and fire protection facilities. Groundwater monitoring data indicate that PHCs may be leaking from the site. Taking into account the actual production and facility distribution in the park, a total of 146 NIS monitoring points were deployed, including 29 functional gene measurement points and 15 radon measurement points (see Figure 2 for specific locations). Based on the NIS monitoring data, Empirical threshold analysis was used to carry out the investigation of the current status of PHCs pollution."
+        "The northern portion of the park contains the main production facilities (e.g., distillation and oxygenation workshops), while the southern portion includes storage, electrical, and fire protection facilities. Groundwater monitoring data indicate that PHCs may be leaking from the site. Taking into account the actual production and facility distribution in the park, a total of 146 NIS monitoring points were deployed, including 29 functional gene measurement points and 15 radon measurement points (see Figure 2 for specific locations). Based on the NIS monitoring data, Empirical threshold analysis was used to carry out the investigation of the current status of PHCs contamination."
     )
 
     insert_image(
         doc,
-        image_path=Path(project_root) / "assets/figs/NIS_point.jpg",
+        image_path=report_cache / "NIS_point.jpg",
         width=10,
         figure_title="Figure 2: Sampling Point Distribution",
         legend="Legend: Dots = NIS survey point; Black closed polygon = Park Boundary",
@@ -270,33 +267,37 @@ def add_results_section(doc, gdf):
         ]
     ]
     doc.add_paragraph(
-        "Table 1 presents the NIS sampling data from the chemical industrial park, comprising 149 sampling points. The monitored parameters include volatile organic compounds (VOCs), oxygen (O₂), carbon dioxide (CO₂), methane (CH₄), and hydrogen sulfide (H₂S), among others. The radon gas sampling data are shown in Table 2."
+        "Table 1 presents the NIS sampling data from the petrochemical industrial park, comprising 149 sampling points. The monitored parameters include volatile organic compounds (VOCs), oxygen (O₂), carbon dioxide (CO₂), methane (CH₄), and hydrogen sulfide (H₂S), among others. The radon gas sampling data are shown in Table 2."
     )
-    add_table(doc, df=nis_data, table_title="Table 1: NIS survey points data")
-    add_table(
+    nis_count = add_table(doc, df=nis_data, table_title="Table 1: NIS survey data")
+    radon_count = add_table(
         doc,
         df=radon_data,
         table_title="Table 2: Radon gas sampling data",
     )
     doc.add_heading("6.2 Analysis results", level=2)
+    add_note(
+        doc,
+        "The actual analysis results of each indicator are not disclosed, and the actual report can be referenced below.The source area and extent of contamination is shown below。",
+    )
     doc.add_paragraph(
         "An empirical threshold analysis was conducted to identify sampling points exceeding regulatory benchmarks (Fig. 1). Using EPA Risk Screening Levels (RSLs) for benzene (0.1 ppb) and DTSC thresholds (10 ppb for soil gas), 12 out of 45 points (26.7%) were classified as high-risk zones. Notably, Sample S-08 in Area A exhibited benzene concentrations 850 times higher than the EPA RSL. Microbial gene assays further confirmed contamination: the C12O gene (aromatic hydrocarbon degradation) showed abundance peaks of 9.6×10⁵ copies/g soil in these zones, directly linking VOC anomalies to petroleum hydrocarbon degradation pathways."
     )
     add_table(doc, df=exceed_data, table_title="Table 3: Exceedance points")
     doc.add_paragraph()
     doc.add_paragraph(
-        "Fig.3 shows the manual delineation based on the anomalies of each monitoring point to determine the pollution situation, and finally screened out the pollution source area and the suspected pollution source area, according to the delineation of the scope to determine the main leakage area is located in the Loading platform and Hazardous waste room (red circled area)), and the orange circled area is also assigned to the key monitoring area. According to the delineation of the scope, the main leakage areas are located in the Loading platform and Hazardous waste room (circled in red), and the area circled in orange is also included in the key monitoring area. Fig.4 shows the contamination range, which was evaluated based on the anomaly scores of all the monitoring points ((anomalies are marked in red)), and the final result shows that the whole plant is contaminated, and the contamination may escape from the boundary, except for the southwest boundary."
+        "Fig.3 shows the manual delineation based on the anomalies of each monitoring point to determine the contamination situation, and finally screened out the contamination source area and the suspected contamination source area, according to the delineation of the scope to determine the main leakage area is located in the Loading platform and Hazardous waste room (red circled area)), and the orange circled area is also assigned to the key monitoring area. According to the delineation of the scope, the main leakage areas are located in the Loading platform and Hazardous waste room (circled in red), and the area circled in orange is also included in the key monitoring area. Fig.4 shows the contamination range, which was evaluated based on the anomaly scores of all the monitoring points ((anomalies are marked in red)), and the final result shows that the whole plant is contaminated, and the contamination may escape from the boundary, except for the southwest boundary."
     )
     insert_image(
         doc,
-        image_path=Path(project_root) / "assets/figs/sourcezone.jpg",
+        image_path=report_cache / "sourcezone.jpg",
         width=10,
-        figure_title="Figure 3: Source Zone Identification",
-        legend="Legend: Red = LNAPL source zone; Orange = Suspected LNAPL zone",
+        figure_title="Figure 3: Source Zone assessment",
+        legend="Legend: Red = Contamination source zone; Orange = Suspected contamination source zone",
     )
     insert_image(
         doc,
-        image_path=Path(project_root) / "assets/figs/scope.png",
+        image_path=report_cache / "scope.png",
         width=10,
         figure_title="Figure 4: Contamination Scope",
         legend="Legend: Red = Contamination Scope; White = Clean Soil",
@@ -306,6 +307,9 @@ def add_results_section(doc, gdf):
 
 def add_risk_assessment_section(doc):
     doc.add_heading("7. Risk Assessment", level=1)
+    doc.add_paragraph(
+        "The results of the risk assessment of the actual park are not disclosed and the actual report can be referenced below."
+    )
 
     # 7.1 Human Health Risks
     doc.add_heading("7.1 Human Health Risks", level=2)
@@ -345,7 +349,7 @@ def add_risk_assessment_section(doc):
     add_table(
         doc,
         df=pd.DataFrame(risk_table_data, columns=risk_table_data[0]),
-        table_title="Table 2: Risk Assessment Summary",
+        table_title="Table 4: Risk Assessment Summary",
     )
     doc.add_paragraph("Threshold: Carcinogenic Risk >1×10⁻⁶ or HQ >1.0.")
 
@@ -385,12 +389,16 @@ def add_risk_assessment_section(doc):
 # 添加结论章节
 def add_conclusion_section(doc):
     doc.add_heading("8. Conclusions and Recommendations", level=1)
+    add_note(
+        doc,
+        "The actual conclusions and recommendations of the report are not disclosed, and the actual report can be referenced below.",
+    )
     doc.add_paragraph(
-        "The NIS successfully identified the LNAPL source zone (Area A) with active volatilization and biodegradation processes."
+        "The NIS successfully identified the contamination source zone (Area A) with active volatilization and biodegradation processes."
     )
     doc.add_paragraph("Recommendations:")
     conclusions = [
-        "Phase III Investigation: Install monitoring wells in Area A for LNAPL thickness quantification."
+        "Phase III Investigation: Install monitoring wells in Area A for contamination thickness quantification."
         "Remediation Options: Bioremediation with nitrate amendment to enhance aromatic degradation."
         "Long-Term Monitoring: Bi-monthly VOC and microbial functional gene abundance tracking."
     ]
@@ -402,7 +410,6 @@ def add_conclusion_section(doc):
 def auto_report_for_empirical_threshold_analysis(gdf=None):
     doc = Document()
     setup_styles(doc)  # 设置默认样式
-
     add_cover_page(doc)
     add_Disclaimer(doc)
     # add_table_of_contents(doc)
@@ -419,10 +426,9 @@ def auto_report_for_empirical_threshold_analysis(gdf=None):
 
 
 if __name__ == "__main__":
-    import geopandas as gpd
-
-    gdf = gpd.read_file("C:\\Users\\Apple\\Desktop\\SDPHC\\tests\\LX_ETA.gpkg")
-    print(gdf.head())
-    print(gdf.columns)
-    file = auto_report_for_empirical_threshold_analysis(gdf=gdf)
-    save_docx_safely(file, "C:\\Users\\Apple\\Desktop\\AppendixB.docx")
+    ...
+    # gdf = gpd.read_file("C:\\Users\\Apple\\Desktop\\SDPHC\\tests\\LX_ETA.gpkg")
+    # print(gdf.head())
+    # print(gdf.columns)
+    # file = auto_report_for_empirical_threshold_analysis(gdf=gdf)
+    # save_docx_safely(file, "C:\\Users\\Apple\\Desktop\\AppendixB.docx")
