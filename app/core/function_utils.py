@@ -111,5 +111,83 @@ def safe_remove(lst, item):
     return lst
 
 
+def export_to_word(doc, parent):
+    from PySide6.QtWidgets import QMessageBox, QFileDialog
+
+    file_path, _ = QFileDialog.getSaveFileName(
+        parent,
+        "Export report",
+        "",
+        "Reporting documents (*.docx)",
+    )
+    if file_path:
+        try:
+            doc.save(file_path)
+            QMessageBox.information(
+                parent,
+                parent.tr("succeed"),
+                parent.tr(
+                    "The report has been saved locally and can be opened using Word!"
+                ),
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                parent, "failed", f"The report failed to be saved due to:{str(e)}"
+            )
+
+
+def export_to_table(gdf, parent):
+    from PySide6.QtWidgets import QMessageBox, QFileDialog
+
+    # 设置文件对话框，允许选择保存路径和文件类型
+    file_path, selected_filter = QFileDialog.getSaveFileName(
+        parent,
+        "Save File",
+        "",
+        "Excel Files (*.xlsx);;CSV Files (*.csv)",
+        options=QFileDialog.Options(),
+    )
+
+    if file_path:
+        try:
+            if selected_filter == "Excel Files (*.xlsx)":
+                gdf.to_excel(file_path, index=False)
+            elif selected_filter == "CSV Files (*.csv)":
+                gdf.to_csv(file_path, index=False)
+
+            QMessageBox.information(
+                parent, "Success", "File has been exported successfully!"
+            )
+        except Exception as e:
+            QMessageBox.critical(parent, "Error", f"Failed to export file: {str(e)}")
+
+
+def export_to_vector_file(gdf, parent):
+    from PySide6.QtWidgets import QMessageBox, QFileDialog
+
+    file_path, selected_filter = QFileDialog.getSaveFileName(
+        parent,
+        "Export Vector File",
+        "",
+        "GeoPackage Files (*.gpkg);;Shapefile Files (*.shp)",
+        options=QFileDialog.Options(),
+    )
+
+    if file_path:
+        try:
+            if selected_filter == "GeoPackage Files (*.gpkg)":
+                gdf.to_file(file_path, driver="GPKG")
+            elif selected_filter == "Shapefile Files (*.shp)":
+                gdf.to_file(file_path, driver="ESRI Shapefile")
+
+            QMessageBox.information(
+                parent, "Success", "File has been exported successfully!"
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                parent, "Error", f"Failed to export vector file: {str(e)}"
+            )
+
+
 if __name__ == "__main__":
     ...

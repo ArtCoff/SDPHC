@@ -1,4 +1,3 @@
-from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QMessageBox,
     QTableView,
@@ -6,7 +5,6 @@ from PySide6.QtWidgets import (
     QWidget,
     QPushButton,
     QPlainTextEdit,
-    QFileDialog,
     QVBoxLayout,
     QHBoxLayout,
 )
@@ -16,6 +14,9 @@ from core import (
     point_dataset_preprocess,
     process_background_value_method,
     calculate_backgroundValue,
+    export_to_vector_file,
+    export_to_word,
+    export_to_table,
 )
 from utils import (
     AppStyle,
@@ -321,15 +322,6 @@ class function_win(QWidget):
         self.initUI()
 
     def initUI(self):
-        # header = [
-        #     "点位",
-        #     "氡气异常低",
-        #     "VOCs异常高",
-        #     "CO2异常高",
-        #     "O2异常低",
-        #     "CH4异常高",
-        #     "功能基因异常高",
-        # ]
         header = [
             "Point ID",
             "Abnormally Low Radon",
@@ -377,45 +369,10 @@ class function_win(QWidget):
         center_window(self)
 
     def export_to_excel(self):
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save", "", "Form document (*.xlsx)"
-        )
-        if file_path:
-            try:
-                self.gdf.to_excel(file_path, index=False)
-                QMessageBox.information(
-                    self,
-                    "Success!",
-                    "The form file has been saved locally and can be opened with Excel.",
-                )  # type: ignore
-            except Exception as e:
-                QMessageBox.critical(
-                    self,
-                    "Error!",
-                    f"The form file failed to be saved, the reason for the failure was {str(e)}",
-                )
+        export_to_table(self.gdf, self)  # type: ignore
 
     def export_to_gpkg(self):
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Save",
-            "",
-            "GeoPackage Files (*.gpkg)",
-        )
-        if file_path:
-            try:
-                self.gdf.to_file(file_path, driver="GPKG")
-                QMessageBox.information(
-                    self,
-                    "Success!",
-                    "The vector files have been saved locally and can be opened using QGIS or ArcGIS.",
-                )  # type: ignore
-            except Exception as e:
-                QMessageBox.critical(
-                    self,
-                    "Error!",
-                    f"The vector file failed to be saved, the reason for the failure is: {str(e)}",
-                )
+        export_to_vector_file(self.gdf, self)  # type: ignore
 
     def plot_data(self):
         from utils.pyside6_utils import show_multiple_plots
@@ -430,24 +387,7 @@ class function_win(QWidget):
         doc = auto_report(
             self.gdf, background_file=None, final_boundarys=self.final_boundarys  # type: ignore
         )
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export report",
-            "",
-            "Reporting documents (*.docx)",
-        )
-        if file_path:
-            try:
-                doc.save(file_path)
-                QMessageBox.information(
-                    self,
-                    "succeed",
-                    "The report has been saved locally and can be opened using WPS or Word!",
-                )  # type: ignore
-            except Exception as e:
-                QMessageBox.critical(
-                    self, "failed", f"The report failed to be saved due to:{str(e)}"
-                )
+        export_to_word(doc, self)  # type: ignore
 
 
 class GeoDataFrameModel(QAbstractTableModel):

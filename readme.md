@@ -1,4 +1,8 @@
-# SDPHC:A Software for Detecting Petroleum Hydrocarbons Contamination
+# SDPHC:A Software for Detecting Petroleum Hydrocarbons Contamination using Non-invasive Survey Dataset
+
+## Usage
+
+Instructions for using the software can be found in the docs directory.
 
 ## Features that have been developed:
 

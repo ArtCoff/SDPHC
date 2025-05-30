@@ -1,23 +1,26 @@
-from PySide6.QtCore import Signal, QThread, Slot, Qt
+from PySide6.QtCore import Signal, QThread, Slot
 from PySide6.QtWidgets import (
     QMessageBox,
     QWidget,
-    QFileDialog,
     QVBoxLayout,
     QHBoxLayout,
 )
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-from utils.predefined_data import Software_info
-from gui.empirical_threshold_analysis import Attribute_Window
-from gui.custom_controls import (
+from .empirical_threshold_analysis import Attribute_Window
+from .custom_controls import (
     Interpolation_method_selection,
     LoadingWindow,
     WrapButton,
 )
-from utils import center_window, show_multiple_plots, AppStyle
-from core import return_PCA_results
+from utils import center_window, show_multiple_plots, AppStyle, Software_info
+from core import (
+    return_PCA_results,
+    export_to_word,
+    export_to_table,
+    export_to_vector_file,
+)
 
 
 class PCA_worker(QThread):
@@ -124,23 +127,7 @@ class PCA_function_win(QWidget):
         self.PC1_interpolation_win.show()
 
     def export_gdf(self):
-        try:
-            gdf = self.result_dict.get("gdf")
-            if gdf is None:
-                raise ValueError("No valid data to export")
-
-            filename, _ = QFileDialog.getSaveFileName(
-                self,
-                "Export GeoDataFrame",
-                "",
-                "gpkg (*.gpkg);;shp (*.shp)",
-            )
-
-            if filename:
-                gdf.to_file(filename, driver="gpkg")
-                QMessageBox.information(self, "Success", "Data exported successfully")
-        except Exception as e:
-            QMessageBox.critical(self, "Export Failed", str(e))
+        export_to_vector_file(self.result_dict.get("gdf"), self)
 
 
 class PC1_Interpolation(QWidget):
@@ -156,7 +143,7 @@ class PC1_Interpolation(QWidget):
         self.main_layout.setSpacing(5)
         self.main_layout.setContentsMargins(5, 5, 5, 5)
         self.dynamic_layout = QVBoxLayout()
-        self.create_initial_plot()  # 原有初始化
+        self.create_initial_plot()
         bottom_layout = QHBoxLayout()
         bottom_layout.addStretch(1)
 

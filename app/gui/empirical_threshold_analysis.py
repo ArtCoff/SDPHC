@@ -1,4 +1,3 @@
-import sys
 from enum import Enum
 from PySide6.QtCore import Signal, Slot, QThread
 from PySide6.QtWidgets import (
@@ -6,7 +5,6 @@ from PySide6.QtWidgets import (
     QTableView,
     QWidget,
     QPushButton,
-    QFileDialog,
     QVBoxLayout,
     QFormLayout,
 )
@@ -15,6 +13,9 @@ from core import (
     calculate_ExperienceValueMethod_scores,
     plot_basic_info,
     read_file_columns,
+    export_to_word,
+    export_to_table,
+    export_to_vector_file,
 )
 from utils import (
     Software_info,
@@ -112,7 +113,6 @@ class Attribute_Window(QWidget):
     def on_next_clicked(self):
 
         contents = self.get_combos_content()
-        print(contents)
         self.loading_window = LoadingWindow()
         self.loading_window.show()
         self.worker = worker(
@@ -168,7 +168,6 @@ class Contamination_identification_win(QWidget):
         super().__init__()
         self.result_dict = result_dict
         self.result_gdf = result_dict["gdf"]
-        # self.outline_dataset = result_dict["outline_dataset"]
         self.initUI()
 
     def initUI(self):
@@ -178,13 +177,13 @@ class Contamination_identification_win(QWidget):
         self.setMinimumSize(400, 200)
 
         self.function1_btn = WrapButton(
-            self.tr("Pollution exceedance points (except radon gas)")
+            self.tr("Contamination exceedance points (except radon gas)")
         )
         self.function2_btn = WrapButton(
-            self.tr("Pollution source area and suspected pollution source area")
+            self.tr("Contamination source zone and suspected source zone")
         )
         self.function4_btn = WrapButton(self.tr("Scope of contamination"))
-        self.function5_btn = WrapButton(self.tr("Pollution level identification"))
+        self.function5_btn = WrapButton(self.tr("Contamination level identification"))
         self.auto_report_btn = WrapButton(self.tr("Auto report"))
 
         # function connections
@@ -259,26 +258,7 @@ class Contamination_identification_win(QWidget):
     def auto_report(self):
 
         doc = auto_report_for_empirical_threshold_analysis(self.result_dict["gdf"])
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export report",
-            "",
-            "Reporting documents (*.docx)",
-        )
-        if file_path:
-            try:
-                doc.save(file_path)
-                QMessageBox.information(
-                    self,
-                    self.tr("succeed"),
-                    self.tr(
-                        "The report has been saved locally and can be opened using Word!"
-                    ),
-                )
-            except Exception as e:
-                QMessageBox.critical(
-                    self, "failed", f"The report failed to be saved due to:{str(e)}"
-                )
+        export_to_word(doc, self)
 
 
 class function_win(QWidget):
@@ -306,60 +286,31 @@ class function_win(QWidget):
         # 调整窗口大小以适应表格内容
         self.adjustSize()
         self.resize(800, 600)
-        # self.setMinimumSize(800, 600)
-        # 创建导出按钮
-        self.export_button = QPushButton(self.tr("Export to Excel"))
-        self.export_button.clicked.connect(self.export_to_excel)
-
-        # 创建绘图按钮
+        # plot button
         self.plot_button = QPushButton(self.tr("Display plot"))
         self.plot_button.clicked.connect(self.plot_data)
-
-        # 创建导出gpkg按钮
-        self.export_shp_button = QPushButton(self.tr("Export to GeoPackage"))
-        self.export_shp_button.clicked.connect(self.export_to_gpkg)
+        # Export Buttons
+        self.export_table_button = QPushButton(self.tr("Export to Table File"))
+        self.export_table_button.clicked.connect(self.export_to_table)
+        self.export_vector_button = QPushButton(self.tr("Export to Vector File"))
+        self.export_vector_button.clicked.connect(self.export_to_gpkg)
 
         # 创建布局
         layout = QVBoxLayout()
         layout.addWidget(self.table_view)
-        layout.addWidget(self.export_button)
-        layout.addWidget(self.export_shp_button)
+        layout.addWidget(self.export_table_button)
+        layout.addWidget(self.export_vector_button)
         layout.addWidget(self.plot_button)
         self.setLayout(layout)
 
         self.setWindowTitle("Result Viewer")
         center_window(self)
 
-    def export_to_excel(self):
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save File", "", "Excel Files (*.xlsx)"
-        )
-        if file_path:
-            try:
-                self.gdf.to_excel(file_path, index=False)
-                QMessageBox.information(
-                    self, "Success", "File has been exported successfully!"
-                )
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export file: {str(e)}")
+    def export_to_table(self):
+        export_to_table(self.gdf, self)
 
     def export_to_gpkg(self):
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Save File",
-            "",
-            "GeoPackage Files (*.gpkg)",
-        )
-        if file_path:
-            try:
-                self.all_gdf.to_file(file_path, driver="GPKG")
-                QMessageBox.information(
-                    self, "Success", "GeoPackage has been exported successfully!"
-                )
-            except Exception as e:
-                QMessageBox.critical(
-                    self, "Error", f"Failed to export GeoPackage: {str(e)}"
-                )
+        export_to_vector_file(self.all_gdf, self)
 
     def plot_data(self):
         if self.function_name == Secondary_Functions_of_ETA.function_PSA:

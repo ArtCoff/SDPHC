@@ -7,21 +7,21 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from utils.interpolation_utils import (
+from utils import (
     idw_interpolation,
     kriging_interpolation,
     scipy_interpolation,
 )
 
 matplotlib.use("QtAgg")
-from core.function_utils import (
+from .function_utils import (
     point_dataset_preprocess,
     boundary_file_preprocess,
     safe_remove,
     add_north_arrow,
     add_scalebar,
 )
-from core.empirical_threshold_functions import mask_with_polygon
+from .empirical_threshold_functions import mask_with_polygon
 from shapely.ops import unary_union
 
 # * PCA Method
