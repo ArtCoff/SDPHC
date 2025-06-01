@@ -307,8 +307,9 @@ def add_results_section(doc, gdf):
 
 def add_risk_assessment_section(doc):
     doc.add_heading("7. Risk Assessment", level=1)
-    doc.add_paragraph(
-        "The results of the risk assessment of the actual park are not disclosed and the actual report can be referenced below."
+    add_note(
+        doc,
+        "The results of the risk assessment of the actual park are not disclosed and the actual report can be referenced below.",
     )
 
     # 7.1 Human Health Risks
