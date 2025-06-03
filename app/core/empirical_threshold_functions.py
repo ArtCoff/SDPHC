@@ -409,8 +409,6 @@ def Score_interpolation(gdf, boundary_gdf, method="linear"):
         add_north_arrow(ax)
         add_scalebar(ax, location="lower left")
         ax.scatter(points[:, 0], points[:, 1], c="red", s=4, label="Data Points")
-
-        # 颜色条优化
         cbar = plt.colorbar(im, ax=ax)
         cbar.set_label("Contamination risk", rotation=270, labelpad=20)
         cbar.ax.text(

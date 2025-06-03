@@ -68,19 +68,19 @@ def process_PCA(gdf, options):
     data_pca_scaled = scaler_pca.fit_transform(data_pca_analysis)
     pca_analysis = PCA(n_components=3)
     pca_results = pca_analysis.fit_transform(data_pca_scaled)
-    # 计算 PCA 载荷矩阵
+    # Calculate PCA Load Matrix
     pca_loadings = pd.DataFrame(
         pca_analysis.components_.T, columns=["PC1", "PC2", "PC3"], index=pca_columns
     )
-    # 计算 PCA 方差贡献率
+    # Calculate the PCA variance contribution ratio
     pca_var_ratio = pca_analysis.explained_variance_ratio_
     pca_scores = pd.DataFrame(pca_results, columns=["PC1", "PC2", "PC3"])
     pca_data = data_pca_analysis.reset_index(drop=True)
 
-    # 合并原始数据与主成分得分
+    # Combining raw data with principal component scores
     complete_pca_df = pd.concat([pca_data, pca_scores], axis=1)
 
-    # 添加ID和几何信息
+    # Add ID and geometry information
     if options.get("Point_ID") is not None:
         complete_pca_df["ID"] = gdf.loc[
             data_pca_analysis.index, options.get("Point_ID")
@@ -92,7 +92,7 @@ def process_PCA(gdf, options):
 
 
 def plot_PCA_variance_contribution(pca_var_ratioa):
-    # 绘制 PCA 方差贡献率图
+    # Plotting the PCA variance contribution
     fig = plt.figure(figsize=(6, 4))
     plt.bar(range(1, 4), pca_var_ratioa * 100, tick_label=["PC1", "PC2", "PC3"])
     plt.ylabel("Variance contribution rate(%)", fontsize=10)
@@ -135,25 +135,16 @@ def plot_PCA_loading_plot(pca_loadings, pca_var_ratio):
             ha="center",
             va="center",
         )
-
-    # 设置坐标轴标签，显示各主成分解释的方差百分比
     ax.set_xlabel(f"PC1 ({pca_var_ratio[0]*100:.2f}%)", fontsize=10)
     ax.set_ylabel(f"PC2 ({pca_var_ratio[1]*100:.2f}%)", fontsize=10)
-
-    # 设置标题
     ax.set_title(
         "PCA Loading Plot",
         fontsize=10,
     )
 
-    # 在 x=0 和 y=0 处添加参考线（虚线）
+    # Add reference lines at x=0 and y=0 (dashed lines)
     ax.axhline(0, color="gray", linewidth=1, linestyle="--")
     ax.axvline(0, color="gray", linewidth=1, linestyle="--")
-
-    # 去除右侧与上侧边框，让图更简洁
-    # sns.despine()
-
-    # 调整边距，防止文字被裁剪
     plt.tight_layout()
     return fig
 
@@ -165,22 +156,22 @@ def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=100):
     ax.scatter(
         pca_scores["PC1"],
         pca_scores["PC2"],
-        s=10,  # 点的大小
-        alpha=0.7,  # 透明度
-        color="gray",  # 颜色
-        label="Samples",  # 用于图例
+        s=10,
+        alpha=0.7,
+        color="gray",
+        label="Samples",
     )
-    # 绘制载荷向量（变量箭头）
-    arrow_scale = 10  # 缩放系数，可根据实际数据分布进行调整
+    # Plotting load vectors (variable arrows)
+    arrow_scale = 10  # Scaling factor
 
     colors = sns.color_palette("hls", n_colors=len(pca_loadings.index))
 
     for i, variable in enumerate(pca_loadings.index):
-        # 缩放后的坐标
+        # Scaled coordinates
         x = pca_loadings.loc[variable, "PC1"] * arrow_scale
         y = pca_loadings.loc[variable, "PC2"] * arrow_scale
 
-        # 绘制箭头
+        # Drawing Arrows
         ax.arrow(
             0,
             0,
@@ -189,12 +180,12 @@ def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=100):
             color=colors[i],
             alpha=0.8,
             linewidth=2,
-            head_width=0.2,  # 箭头头部宽度
-            head_length=0.3,  # 箭头头部长度
+            head_width=0.2,  # Arrow head width
+            head_length=0.3,  # Arrow head length
             length_includes_head=True,
         )
 
-        # 在箭头末端附近添加文字标签
+        # Add a text label near the end of the arrow
         ax.text(
             x * 1.1,
             y * 1.1,
@@ -206,19 +197,11 @@ def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=100):
             va="center",
         )
 
-    # 5. 设置坐标轴标签与标题
     ax.set_xlabel(f"PC1 ({pca_var_ratio[0]*100:.2f}%)", fontsize=10)
     ax.set_ylabel(f"PC2 ({pca_var_ratio[1]*100:.2f}%)", fontsize=10)
     ax.set_title("PCA Biplot", fontsize=10)
-
-    # 6. 添加参考线与美化
     ax.axhline(0, color="gray", linewidth=1, linestyle="--")
     ax.axvline(0, color="gray", linewidth=1, linestyle="--")
-
-    # 去除右侧与上侧边框，让图更简洁
-    # sns.despine()
-
-    # 7. 显示图例并调整布局
     ax.legend()
     plt.tight_layout()
     return fig
@@ -256,7 +239,7 @@ def plot_PC1_score(
     import matplotlib as mpl
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-    # 设置全局样式
+    # Setting Global Styles
     mpl.rcParams.update(
         {
             "font.family": "Times New Roman",
@@ -268,12 +251,9 @@ def plot_PC1_score(
         }
     )
     values = gdf[column].values
-    # 创建画布
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.2)
-
-    # 绘制点图
     norm = mpl.colors.Normalize(vmin=np.nanmin(values), vmax=np.nanmax(values))
     default_style = {"marker": "o", "edgecolor": "black", "linewidth": 0.5}
 
@@ -288,10 +268,7 @@ def plot_PC1_score(
         legend_kwds={"label": f"{column}", "orientation": "vertical"},
         **default_style,  # 默认样式
     )
-
-    # 绘制边界
     boundary_gdf.plot(ax=ax, facecolor="none", edgecolor="black", linewidth=1.2)
-    # 坐标轴美化
     ax.tick_params(axis="both", which="major", labelsize=fontsize - 2, direction="in")
     ax.set_xlabel("X", labelpad=labelpad)
     ax.set_ylabel("Y", labelpad=labelpad)
@@ -303,20 +280,17 @@ def plot_PC1_interpolation(
     points_gdf,
     interpolation_method,
 ) -> Figure:
-    # 提取插值点坐标
+    # Extract interpolated point coordinates
     x = points_gdf.geometry.x
     y = points_gdf.geometry.y
     z = points_gdf["PC1"].values
-    # "gist_rainbow"
-    # 创建网格
+    # Create a mesh
     grid_x, grid_y = np.mgrid[
         min(x) - 0.001 : max(x) + 0.001 : 100j, min(y) - 0.001 : max(y) + 0.001 : 100j
     ]
 
-    # 合并边界多边形
+    # Merging boundary polygons
     boundary_polygon = unary_union(boundary_gdf.geometry)
-
-    # 创建图形
     fig = Figure(figsize=(8, 6), dpi=150)
     ax = fig.add_subplot(111)
 
@@ -362,14 +336,5 @@ def plot_PC1_interpolation(
         contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
         fig.colorbar(contour, ax=ax, label="PC1(Kriging)")
         # ax.set_title("Kriging Interpolation")
-
-    # 添加公共元素
     add_common_elements(ax, boundary_gdf, points_gdf)
-    fig.savefig(
-        f"./auto_report_cache/{interpolation_method}.png",
-        dpi=900,
-        bbox_inches="tight",
-        pad_inches=0.1,
-    )
-
     return fig
