@@ -37,14 +37,14 @@ def return_PCA_results(point_dataset, options, outline_dataset):
     pca_results, pca_loadings, pca_var_ratio, pca_gdf = process_PCA(
         gdf=gdf, options=options
     )
-    PC1_score_fig = plot_PC1_score(pca_gdf, boundary_gdf, column="PC1")
+    PC1_score_fig = plot_PC_score(pca_gdf, boundary_gdf, column="PC1")
     PCA_variance_contribution_fig = plot_PCA_variance_contribution(pca_var_ratio)
     PCA_loading_plot_fig = plot_PCA_loading_plot(pca_loadings, pca_var_ratio)
     PCA_Biplot_fig = plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio)
     PC1_interpolation_figs = {}
     interpolation_methods = ["Nearest", "Cubic", "IDW", "Kriging"]
     for interpolation_method in interpolation_methods:
-        fig = plot_PC1_interpolation(
+        fig = plot_PC_interpolation(
             boundary_gdf=boundary_gdf,
             points_gdf=pca_gdf,
             interpolation_method=interpolation_method,
@@ -222,7 +222,7 @@ def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=100):
 
 def add_common_elements(ax, boundary_gdf, points_gdf):
     boundary_gdf.plot(
-        ax=ax, color="none", edgecolor="black", linewidth=2, label="Boundary"
+        ax=ax, color="none", edgecolor="black", linewidth=1.5, label="Boundary"
     )
     ax.scatter(
         points_gdf.geometry.x,
@@ -234,12 +234,12 @@ def add_common_elements(ax, boundary_gdf, points_gdf):
     )
     add_north_arrow(ax)
     add_scalebar(ax, location="lower left")
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.legend(fontsize=10)
+    ax.set_xlabel("X Coordinate")
+    ax.set_ylabel("Y Coordinate")
+    # ax.legend(fontsize=10)
 
 
-def plot_PC1_score(
+def plot_PC_score(
     gdf: gpd.GeoDataFrame,
     boundary_gdf: gpd.GeoDataFrame,
     column: str,
@@ -288,15 +288,17 @@ def plot_PC1_score(
     return fig
 
 
-def plot_PC1_interpolation(
+def plot_PC_interpolation(
     boundary_gdf,
     points_gdf,
     interpolation_method,
+    PC="PC1",
+    dpi=150,
 ) -> Figure:
     # Extract interpolated point coordinates
     x = points_gdf.geometry.x
     y = points_gdf.geometry.y
-    z = points_gdf["PC1"].values
+    z = points_gdf[PC].values
     # Create a mesh
     grid_x, grid_y = np.mgrid[
         min(x) - 0.001 : max(x) + 0.001 : 100j, min(y) - 0.001 : max(y) + 0.001 : 100j
@@ -304,32 +306,27 @@ def plot_PC1_interpolation(
 
     # Merging boundary polygons
     boundary_polygon = unary_union(boundary_gdf.geometry)
-    fig = Figure(figsize=(8, 6), dpi=150)
-    ax = fig.add_subplot(111)
-
+    fig = Figure(figsize=(8, 6), dpi=dpi)
+    ax = fig.add_subplot(111, aspect="equal")
+    # 绘图配置
+    cmap = plt.cm.RdBu_r  # 红到蓝渐变色标
+    levels = np.linspace(np.nanmin(z), np.nanmax(z), 20)
     if interpolation_method == "Nearest":
         from scipy.interpolate import griddata
 
         grid_z = griddata((x, y), z, (grid_x, grid_y), method="nearest")
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
-        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1(Nearest)")
-
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap=cmap, levels=levels)
     elif interpolation_method == "Cubic":
         from scipy.interpolate import griddata
 
         grid_z = griddata((x, y), z, (grid_x, grid_y), method="cubic")
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
-
-        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1(Cubic)")
-
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap=cmap, levels=levels)
     elif interpolation_method == "IDW":
         grid_z = idw_interpolation(x, y, z, grid_x, grid_y, power=2)
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
-
-        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1(IDW)")
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap=cmap, levels=levels)
 
     elif interpolation_method == "Kriging":
         grid_z = kriging_interpolation(
@@ -338,11 +335,19 @@ def plot_PC1_interpolation(
             z,
             np.linspace(min(x) - 0.001, max(x) + 0.001, 100),
             np.linspace(min(y) - 0.001, max(y) + 0.001, 100),
+            variogram_model="spherical",
         )
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
-
-        contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
-        fig.colorbar(contour, ax=ax, label="PC1(Kriging)")
-        # ax.set_title("Kriging Interpolation")
+        contour = ax.contourf(grid_x, grid_y, masked_z, cmap=cmap, extend="neither")
     add_common_elements(ax, boundary_gdf, points_gdf)
+
+    # * Customize the colorbar
+    cbar = fig.colorbar(contour, ax=ax, orientation="vertical", pad=0.03, shrink=0.8)
+    cbar.set_label("PC1 Score (Red=High, Blue=Low)", fontsize=15)
+    cbar.ax.tick_params(
+        labelsize=15,
+    )
+    from matplotlib.ticker import FormatStrFormatter
+
+    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
     return fig

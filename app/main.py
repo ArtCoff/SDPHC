@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from PySide6.QtCore import Qt, QTranslator
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -47,15 +48,17 @@ class start_window(QWidget):
         self.method_radiobtns = CustomRadioButtons()
         self.language_switcher = LanguageSwitcher()
 
-        #!
-        self.outline_dataset.setText(
-            r"C:\Users\Apple\Desktop\SDPHC\tests\JN_boundary.gpkg"
-        )
-        self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\JN_NIS.gpkg")
-        # self.outline_dataset.setText(
-        #     r"C:\Users\Apple\Desktop\SDPHC\tests\LX_boundary.gpkg"
+        #! Default settings for boundary file and point data file paths used for testing
+        test = False
+        # test_boundary = (
+        #     Path.cwd().joinpath("tests/JN_boundary.gpkg").resolve().as_posix()
         # )
-        # self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\LX_NIS.gpkg")
+        # test_nis = Path.cwd().joinpath("tests/JN_NIS.gpkg").resolve().as_posix()
+        # test_boundary = Path.cwd().joinpath("tests/_boundary.gpkg").resolve().as_posix()
+        # test_nis = Path.cwd().joinpath("tests/_NIS.gpkg").resolve().as_posix()
+        if test:
+            self.outline_dataset.setText(test_boundary)
+            self.point_dataset.setText(test_nis)
         #!
         form_layout = QFormLayout()
         form_layout.addRow(self.tr("Boundary File:"), self.outline_dataset)
@@ -72,19 +75,18 @@ class start_window(QWidget):
         btn_layout.addStretch(8)
         self.help_btn.clicked.connect(self.on_help_clicked)
         self.next_btn.clicked.connect(self.on_next_clicked)
-        # 总体布局
-        v_layput = QVBoxLayout()
-        v_layput.addLayout(form_layout)
-        v_layput.addStretch()
-        v_layput.addLayout(btn_layout)
+        v_layout = QVBoxLayout()
+        v_layout.addLayout(form_layout)
+        v_layout.addStretch()
+        v_layout.addLayout(btn_layout)
 
-        self.setLayout(v_layput)
+        self.setLayout(v_layout)
         center_window(self)
 
     def on_help_clicked(self):
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Information)
-        msg_box.setWindowTitle(self.tr("Help"))  # 设置标题
+        msg_box.setWindowTitle(self.tr("Help"))
         msg_box.setText(
             self.tr(
                 """
@@ -94,8 +96,6 @@ class start_window(QWidget):
             )
         )
         msg_box.setStandardButtons(QMessageBox.Ok)
-
-        # 显示消息框
         msg_box.exec_()
 
     def on_next_clicked(self):
@@ -129,17 +129,18 @@ if __name__ == "__main__":
     import os
 
     settings = load_settings()
+    # Scaling issues can be solved by setting the value of QT_SCALE_FACTOR
     qt_scale_factor = settings.get("QT_SCALE_FACTOR", "1.00")
     os.environ["QT_SCALE_FACTOR"] = qt_scale_factor
     app = QApplication(sys.argv)
-    # app.setStyle("Windows")
-    # 国际化
+
+    # internationalization
     trans = QTranslator()
     lang = settings.get("DEFAULT_LANG", "en_US")
     trans.load(f"./assets/locales/{lang}.qm")
     app.installTranslator(trans)
-
-    # 正确获取主屏幕
+    # set application style
+    # app.setStyle("Windows")
     font_family = settings.get("FONT_FAMILY", "Arial")
     font_size = int(settings.get("FONT_SIZE", "12"))
     app.setFont(QFont(font_family, font_size))
