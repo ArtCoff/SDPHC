@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 from PySide6.QtCore import Signal, Slot, QThread
 from PySide6.QtWidgets import (
@@ -276,14 +277,11 @@ class function_win(QWidget):
         self.all_gdf = result_dict["gdf"]
         self.gdf = display_gdf[columns_to_display]  #
         self.function_name = funtion_name
-        # 创建表格视图
         self.table_view = QTableView()
         self.table_model = GeoDataFrameModel(self.gdf, columns_to_display)
         self.table_view.setModel(self.table_model)
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
-
-        # 调整窗口大小以适应表格内容
         self.adjustSize()
         self.resize(800, 600)
         # plot button

@@ -98,11 +98,20 @@ def process_PCA(gdf, options):
 def plot_PCA_variance_contribution(pca_var_ratioa):
     # Plotting the PCA variance contribution
     fig = plt.figure(figsize=(6, 4))
-    plt.bar(range(1, 4), pca_var_ratioa * 100, tick_label=["PC1", "PC2", "PC3"])
+    bars = plt.bar(range(1, 4), pca_var_ratioa * 100, tick_label=["PC1", "PC2", "PC3"])
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            height + 0.1,
+            f"{height:.2f}%",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
     plt.ylabel("Variance contribution rate(%)", fontsize=10)
     plt.xlabel("Principal component", fontsize=10)
     plt.title("PCA Variance Contribution", fontsize=10)
-    # plt.grid(axis="y", linestyle="--", alpha=0.7)
     plt.tight_layout()
     return fig
 

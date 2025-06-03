@@ -48,14 +48,14 @@ class start_window(QWidget):
         self.language_switcher = LanguageSwitcher()
 
         #!
-        # self.outline_dataset.setText(
-        #     r"C:\Users\Apple\Desktop\SDPHC\tests\JN_boundary.gpkg"
-        # )
-        # self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\JN_NIS.gpkg")
         self.outline_dataset.setText(
-            r"C:\Users\Apple\Desktop\SDPHC\tests\LX_boundary.gpkg"
+            r"C:\Users\Apple\Desktop\SDPHC\tests\JN_boundary.gpkg"
         )
-        self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\LX_NIS.gpkg")
+        self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\JN_NIS.gpkg")
+        # self.outline_dataset.setText(
+        #     r"C:\Users\Apple\Desktop\SDPHC\tests\LX_boundary.gpkg"
+        # )
+        # self.point_dataset.setText(r"C:\Users\Apple\Desktop\SDPHC\tests\LX_NIS.gpkg")
         #!
         form_layout = QFormLayout()
         form_layout.addRow(self.tr("Boundary File:"), self.outline_dataset)
