@@ -1,5 +1,4 @@
-import pandas as pd
-import geopandas as gpd
+import logging
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -14,7 +13,7 @@ from .function_utils import (
 )
 
 
-# * Background Value Method
+# * Background Level Method
 def compute_ecdf(data):
     sorted_data = np.sort(data)
     n = len(sorted_data)
@@ -27,7 +26,7 @@ def draw_ECDF(
     param_name="",
     unit="",
 ):
-    fig = Figure(figsize=(10, 5))  # 创建一个 Figure 对象
+    fig = Figure(figsize=(10, 5))
     ax = fig.add_subplot(111)
 
     sorted_data, cum_prob = compute_ecdf(data)
@@ -58,23 +57,23 @@ def draw_KMeans_cluster(data, param_name="", unit="", random_state=0):
     # 将数据转换为二维数组
     data = np.array(data).reshape(-1, 1)
     if len(data) == 0:
-        raise ValueError("输入数据不能为空")
+        raise ValueError("Input data cannot be empty")
 
-    # KMeans 聚类
+    # KMeans
     kmeans = KMeans(n_clusters=2, random_state=random_state).fit(data)
     centers = kmeans.cluster_centers_.flatten()
-    boundary = np.mean(centers)  # 使用聚类中心的均值作为分界点
+    # Use the mean of the clustering center as the cut-off point
+    boundary = np.mean(centers)
 
-    # 创建绘图对象
     fig = Figure(figsize=(8, 6), dpi=90)
     ax = fig.add_subplot(111)
 
-    # 绘制数据点
+    # Plotting data points
     from collections import Counter
 
     data_counts = Counter(data.flatten())
     for point, count in data_counts.items():
-        # 根据所属聚类分配颜色
+        # Assign colors based on the cluster
         color = "blue" if point <= boundary else "orange"
         label = (
             "Part Ⅰ"
@@ -84,11 +83,11 @@ def draw_KMeans_cluster(data, param_name="", unit="", random_state=0):
 
         ax.scatter(point, 0, color=color, s=50, label=label)
 
-        # 显示重复点计数
+        # Display Repeat Point Count
         if count > 1:
             ax.text(point, 0.005, f"{count}", ha="center", va="bottom", fontsize=10)
 
-    # 绘制中心点和分界线
+    # Plotting centers and dividers
     ax.scatter(
         centers,
         [0] * len(centers),
@@ -100,7 +99,7 @@ def draw_KMeans_cluster(data, param_name="", unit="", random_state=0):
     ax.axvline(boundary, color="green", linestyle="--", label="Cut-off Value")
     ax.text(boundary, -0.05, f"{boundary:.2f}", ha="right", color="green", fontsize=12)
 
-    # 设置图表属性
+    # Setting Chart Properties
     ax.set_title(
         f"{param_name} KMeans cluster analysis"
         if param_name
@@ -126,18 +125,15 @@ def process_background_value_method(gdf):
     for col in [indicator for indicator in NIS_indicators]:
         print(f"Processing {col.value.name}...")
         unit = col.value.unit
-        # 处理数据
         data = gdf[col.value.name].dropna().values  # .reshape(-1, 1)
         if data.size == 0:
             results[col] = BackgroundResult()
             continue
-
-        # 生成图表
         try:
             ecdf_fig = draw_ECDF(data, param_name=col.value.name, unit=unit)
         except Exception as e:
             ecdf_fig = None
-            print(f"ECDF生成失败({col}): {str(e)}")
+            logging.error(f"ECDF Generation Failure({col}): {str(e)}")
 
         try:
             kmeans_boundary, kmeans_fig = draw_KMeans_cluster(
@@ -146,7 +142,7 @@ def process_background_value_method(gdf):
         except Exception as e:
             kmeans_boundary = None
             kmeans_fig = None
-            print(f"KMeans分析失败({col}): {str(e)}")
+            logging.error(f"KMeans analysis failure({col}): {str(e)}")
 
         # 保存结果
         results[col] = BackgroundResult(

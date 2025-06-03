@@ -1,5 +1,5 @@
 import pandas as pd
-import geopandas as gpd
+import logging
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -210,7 +210,7 @@ def Plot_source_zone(gdf, boundary_gdf):
     fig = Figure(figsize=(10, 8), dpi=90)
     ax = fig.add_subplot(111)
     matplotlib.rcParams["font.family"] = "Times New Roman"
-    # 设置颜色映射，按 'Category' 分配颜色
+    # * Setting up color mapping, assigning colors by 'Category'
     colors = {
         "Source_of_contamination": "red",
         "Suspected_source_of_contamination": "orange",
@@ -268,17 +268,8 @@ def Plot_source_zone(gdf, boundary_gdf):
     ]
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
-    import os
 
-    os.makedirs(os.path.dirname("./auto_report_cache"), exist_ok=True)
-    fig.savefig(
-        "./auto_report_cache/source_fig.png",
-        dpi=900,
-        bbox_inches="tight",
-        pad_inches=0.1,
-    )
-
-    # 关闭图形防止内存泄漏
+    # Close graphics to prevent memory leaks
     plt.close(fig)
     return fig
 
@@ -299,7 +290,6 @@ def Plot_scope_of_contamination(gdf, boundary_gdf):
     add_scalebar(ax, location="lower left")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
-    # 添加自定义图例
     legend_elements = [
         Line2D(
             [0],
@@ -326,29 +316,6 @@ def Plot_scope_of_contamination(gdf, boundary_gdf):
     # 添加图例到右下角
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
-    # *添加注记(为论文准备)
-    # ax.annotate(
-    #     "(b)",
-    #     xy=(0.03, 0.92),
-    #     xycoords="axes fraction",
-    #     ha="left",
-    #     va="bottom",
-    #     fontsize=20,
-    #     bbox=dict(
-    #         boxstyle="round,pad=0.3", facecolor="white", edgecolor="gray", alpha=0
-    #     ),
-    # )
-    import os
-
-    os.makedirs(os.path.dirname("./auto_report_cache"), exist_ok=True)
-    fig.savefig(
-        "./auto_report_cache/scope_fig.png",
-        dpi=900,
-        bbox_inches="tight",
-        pad_inches=0.1,
-    )
-
-    # 关闭图形防止内存泄漏
     plt.close(fig)
     return fig
 
@@ -371,7 +338,6 @@ def Plot_anomaly_point(gdf, boundary_gdf):
     add_scalebar(ax, location="lower left")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
-    # 添加自定义图例
     legend_elements = [
         Line2D(
             [0],
@@ -384,56 +350,17 @@ def Plot_anomaly_point(gdf, boundary_gdf):
             markersize=10,
         )
     ]
-
-    # 添加图例到右下角
     ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 0))
     plt.tight_layout()
-    # 保存图像（DPI=300，防裁剪）
-    import os
-
-    os.makedirs(os.path.dirname("./auto_report_cache"), exist_ok=True)
-    fig.savefig(
-        "./auto_report_cache/exceed_fig.png",
-        dpi=900,
-        bbox_inches="tight",
-        pad_inches=0.1,
-    )
-
-    # 关闭图形防止内存泄漏
     plt.close(fig)
     return fig
-
-
-# 将掩膜后的数据导出为 GeoTIFF 文件
-# def export_to_geotiff(filename, data, transform, crs):
-#     from rasterio import Affine, MemoryFile
-#     from rasterio.enums import Resampling
-#     from rasterio.transform import from_origin
-#     from rasterio.plot import show
-#     from rasterio.io import MemoryFile
-
-#     with MemoryFile() as memfile:
-#         with memfile.open(
-#             driver="GTiff",
-#             height=data.shape[0],
-#             width=data.shape[1],
-#             count=1,
-#             dtype="float32",
-#             crs=crs,
-#             transform=transform,
-#         ) as dataset:
-#             dataset.write(data, 1)
-#             dataset.flush()
-#             # 保存到文件
-#             with open(filename, "wb") as f:
-#                 f.write(memfile.read())
 
 
 def mask_with_polygon(grid_x, grid_y, grid_z, polygon):
     from shapely.geometry import Point
     import numpy as np
 
-    # 创建掩膜
+    # Create a mask
     mask = np.zeros_like(grid_z, dtype=bool)
     for i in range(grid_z.shape[0]):
         for j in range(grid_z.shape[1]):
@@ -441,13 +368,12 @@ def mask_with_polygon(grid_x, grid_y, grid_z, polygon):
             if polygon.contains(point):
                 mask[i, j] = True
 
-    # 应用掩膜
+    # Apply the mask
     masked_grid_z = np.where(mask, grid_z, np.nan)
     return masked_grid_z
 
 
 import numpy as np
-import geopandas as gpd
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from shapely.ops import unary_union
@@ -494,86 +420,9 @@ def Score_interpolation(gdf, boundary_gdf, method="linear"):
             0.5, -0.02, "Low", ha="center", va="top", transform=cbar.ax.transAxes
         )
 
-        # 边界绘制（使用geopandas高效渲染）
+        # Boundary drawing (efficient rendering with geopandas)
         boundary.boundary.plot(ax=ax, color="red", lw=1, label="Boundary")
         ax.legend()
         return fig
     except Exception as e:
         raise RuntimeError(f"Processing failed: {str(e)}")
-
-
-# def 污染等级识别(gdf, boundary_polygon_file):
-#     import numpy as np
-#     import geopandas as gpd
-#     import matplotlib.pyplot as plt
-#     from scipy.interpolate import griddata
-#     from shapely.ops import unary_union
-#     from rasterio.transform import from_origin
-
-#     fig = Figure(figsize=(10, 8), dpi=90)
-#     ax = fig.add_subplot(111)
-#     boundary_polygon = gpd.read_file(boundary_polygon_file).to_crs(
-#         epsg=Drawing_specifications.EPSG_code
-#     )
-#     # 提取坐标
-#     points = np.array([[p.x, p.y] for p in gdf.geometry])
-
-#     # 根据是否存在总体得分属性，决定使用 total_score 还是 score
-#     values = np.where(
-#         gdf["All_indicators_Scores"].notna(),
-#         gdf["All_indicators_Scores"],
-#         gdf["The_other_soil_gas_scores"],
-#     )
-#     min_x, min_y, max_x, max_y = boundary_polygon.total_bounds
-#     # 生成插值网格（100x100）
-#     grid_x, grid_y = np.mgrid[min_x:max_x:300j, min_y:max_y:300j]
-#     grid_z = griddata(points, values, (grid_x, grid_y), method="linear")
-
-#     # 获取边界多边形（假设为单个多边形）
-#     boundary_poly = unary_union(boundary_polygon.geometry)
-
-#     # 应用掩膜
-#     masked_grid_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_poly)
-
-#     # 计算地理坐标系转换
-#     transform = from_origin(
-#         min_x,
-#         max_y,
-#         (max_x - min_x) / grid_x.shape[0],
-#         (max_y - min_y) / grid_y.shape[1],
-#     )
-
-#     # 可视化掩膜后的插值结果
-#     import matplotlib
-
-#     matplotlib.rcParams["font.family"] = "Times New Roman"
-#     im = ax.imshow(
-#         masked_grid_z.T,
-#         extent=(
-#             min_x,
-#             max_x,
-#             min_y,
-#             max_y,
-#         ),
-#         origin="lower",
-#         cmap="viridis",
-#         interpolation="none",
-#     )
-#     add_north_arrow(ax)
-#     add_scalebar(ax, location="lower left")
-#     ax.set_xlabel("X")
-#     ax.set_ylabel("Y")
-#     ax.scatter(points[:, 0], points[:, 1], c="red", label="Data Points", s=4)
-#     cbar = plt.colorbar(im, ax=ax)
-#     cbar.set_label("Contamination risk", rotation=270, labelpad=20)
-#     # 在colorbar顶部添加文字说明
-#     cbar.ax.text(
-#         1.4, 0.95, "High", ha="right", va="bottom", transform=cbar.ax.transAxes
-#     )
-
-#     # 在colorbar底部添加文字说明
-#     cbar.ax.text(1.4, 0.05, "Low", ha="right", va="top", transform=cbar.ax.transAxes)
-
-#     boundary_coords = np.array(boundary_poly.exterior.coords)
-#     ax.plot(boundary_coords[:, 0], boundary_coords[:, 1], "r-", lw=1, label="Boundary")
-#     return fig
