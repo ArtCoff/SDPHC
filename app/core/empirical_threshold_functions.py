@@ -1,11 +1,11 @@
-import pandas as pd
 import logging
 import numpy as np
+import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
-matplotlib.use("QtAgg")
+
 from utils import NIS_indicators, Drawing_specifications
 from .function_utils import (
     point_dataset_preprocess,
@@ -15,6 +15,7 @@ from .function_utils import (
     add_scalebar,
 )
 
+matplotlib.use("QtAgg")
 
 # * Experience Value Method
 # NIS_indicators = [

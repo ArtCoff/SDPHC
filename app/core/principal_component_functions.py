@@ -7,13 +7,16 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from shapely.ops import unary_union
+
+
 from utils import (
     idw_interpolation,
     kriging_interpolation,
     scipy_interpolation,
 )
 
-matplotlib.use("QtAgg")
+
 from .function_utils import (
     point_dataset_preprocess,
     boundary_file_preprocess,
@@ -22,7 +25,8 @@ from .function_utils import (
     add_scalebar,
 )
 from .empirical_threshold_functions import mask_with_polygon
-from shapely.ops import unary_union
+
+matplotlib.use("QtAgg")
 
 # * PCA Method
 
@@ -299,10 +303,8 @@ def plot_PC1_interpolation(
 
         grid_z = griddata((x, y), z, (grid_x, grid_y), method="nearest")
         masked_z = mask_with_polygon(grid_x, grid_y, grid_z, boundary_polygon)
-
         contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
         fig.colorbar(contour, ax=ax, label="PC1(Nearest)")
-        # ax.set_title("Nearest Neighbor Interpolation")
 
     elif interpolation_method == "Cubic":
         from scipy.interpolate import griddata
@@ -312,7 +314,6 @@ def plot_PC1_interpolation(
 
         contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
         fig.colorbar(contour, ax=ax, label="PC1(Cubic)")
-        # ax.set_title("Cubic Interpolation")
 
     elif interpolation_method == "IDW":
         grid_z = idw_interpolation(x, y, z, grid_x, grid_y, power=2)
@@ -320,10 +321,8 @@ def plot_PC1_interpolation(
 
         contour = ax.contourf(grid_x, grid_y, masked_z, cmap="jet", levels=10)
         fig.colorbar(contour, ax=ax, label="PC1(IDW)")
-        # ax.set_title("Inverse Distance Weighting Interpolation")
 
     elif interpolation_method == "Kriging":
-        # grid_z = kriging_interpolation(x, y, z, grid_x, grid_y)
         grid_z = kriging_interpolation(
             x,
             y,

@@ -9,6 +9,6 @@ from .function_utils import (
 from .empirical_threshold_functions import calculate_ExperienceValueMethod_scores
 from .background_level_functions import (
     process_background_value_method,
-    calculate_backgroundValue,
+    calculate_backgroundLevel,
 )
 from .principal_component_functions import return_PCA_results

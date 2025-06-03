@@ -133,7 +133,7 @@ class CustomComboBox(QComboBox):
             self.setCurrentIndex(0)
 
 
-class background_value_input_doublespinbox(QDoubleSpinBox):
+class background_level_input_doublespinbox(QDoubleSpinBox):
     def __init__(self, range):
         super().__init__()
         self.setRange(0.0, range)

@@ -3,14 +3,13 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-
-matplotlib.use("QtAgg")
-
 from utils import NIS_indicators, Drawing_specifications
 from .function_utils import (
     add_north_arrow,
     add_scalebar,
 )
+
+matplotlib.use("QtAgg")
 
 
 # * Background Level Method
@@ -43,10 +42,9 @@ def draw_ECDF(
 def draw_KMeans_cluster(data, param_name="", unit="", random_state=0):
     import numpy as np
     from sklearn.cluster import KMeans
-    import geopandas as gpd
 
     """
-    对输入的一组数据进行 KMeans 聚类，返回分界点和绘图对象。
+    Perform KMeans clustering on an input set of data, returning cutoffs and plotting objects.
 
     :param data: 输入的一组数据（列表、NumPy 数组等）
     :param param_name: 参数名称（用于显示）
@@ -57,7 +55,7 @@ def draw_KMeans_cluster(data, param_name="", unit="", random_state=0):
     # 将数据转换为二维数组
     data = np.array(data).reshape(-1, 1)
     if len(data) == 0:
-        raise ValueError("Input data cannot be empty")
+        logging.error("KMEANS input data cannot be empty")
 
     # KMeans
     kmeans = KMeans(n_clusters=2, random_state=random_state).fit(data)
@@ -154,7 +152,7 @@ def process_background_value_method(gdf):
     return results
 
 
-def calculate_backgroundValue(data, boundarys):
+def calculate_backgroundLevel(data, boundarys):
     new_data = data.copy()
     gdf = new_data.get("gdf")
     result_gdf = anomaly_identification(gdf, boundarys)
@@ -341,7 +339,7 @@ def backgroundValue_anomaly_fig(
     return fig
 
 
-def backgroundValue_anomaly_fig______(gdf, boundary_polygon_file=None, save=False):
+def backgroundValue_anomaly_fig_CN(gdf, boundary_polygon_file=None, save=False):
     import geopandas as gpd
     import matplotlib
     import matplotlib.pyplot as plt
@@ -445,4 +443,3 @@ def 绘制点位分布(gdf, boundary_polygon_file=None):
         )
     )
     plt.tight_layout()
-    # plt.savefig("./ref/监测点位分布图.png")

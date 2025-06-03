@@ -1,3 +1,4 @@
+import logging
 from PySide6.QtWidgets import (
     QMessageBox,
     QTableView,
@@ -13,7 +14,7 @@ from core import (
     read_file_columns,
     point_dataset_preprocess,
     process_background_value_method,
-    calculate_backgroundValue,
+    calculate_backgroundLevel,
     export_to_vector_file,
     export_to_word,
     export_to_table,
@@ -28,14 +29,14 @@ from utils import (
 )
 
 from .custom_controls import (
-    background_value_input_doublespinbox,
+    background_level_input_doublespinbox,
     bottom_buttons,
     LoadingWindow,
 )
 from .empirical_threshold_analysis import Attribute_Window
 
 
-class backgroundValue_worker(QThread):
+class backgroundLevel_worker(QThread):
     finished_signal = Signal()
     result_ready = Signal(object)
 
@@ -45,10 +46,6 @@ class backgroundValue_worker(QThread):
         self.options = options
 
     def run(self):
-        # 返回ECDF绘图对象
-        # 返回Kmeans绘图对象和边界值
-        # 返回预处理的gdf
-        # 返回异常点位绘图对象
         gdf = point_dataset_preprocess(self.point_dataset, self.options)
         result_dict = process_background_value_method(gdf)
         result_dict["gdf"] = gdf
@@ -66,7 +63,7 @@ class anomaly_identification_worker(QThread):
         self.final_boundarys = final_boundarys
 
     def run(self):
-        result_dict = calculate_backgroundValue(self.data, self.final_boundarys)
+        result_dict = calculate_backgroundLevel(self.data, self.final_boundarys)
         self.result_ready.emit(result_dict)
         self.finished_signal.emit()
 
@@ -118,7 +115,7 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
         contents = self.get_combos_content()
         self.loading_window = LoadingWindow()
         self.loading_window.show()
-        self.worker = backgroundValue_worker(self.point_dataset, contents)
+        self.worker = backgroundLevel_worker(self.point_dataset, contents)
         self.worker.result_ready.connect(self.on_worker_result_ready)
         self.worker.finished_signal.connect(self.worker.deleteLater)
         self.worker.start()
@@ -147,7 +144,7 @@ class indicator_background_value_input(QWidget):
             self.status = False
         self.label = QLabel(f"{indicator.value.label}:")
         self.unit_label = QLabel(indicator.value.unit)
-        self.background_value_input = background_value_input_doublespinbox(
+        self.background_value_input = background_level_input_doublespinbox(
             range=value_range
         )
         self.ecdf_btn = QPushButton("ECDF")
@@ -187,14 +184,12 @@ class indicator_background_value_input(QWidget):
             )
 
     def plot_kemans_boundary(self):
-        # fig = deepcopy(self.result.kmeans_fig)
         fig = self.result.kmeans_fig
         if fig is None:
             return QMessageBox.warning(self, "Warning", "No data available")
         show_multiple_plots(fig)
 
     def plot_ECDF(self):
-        # fig = deepcopy(self.result.ecdf_fig)
         fig = self.result.ecdf_fig
         if fig is None:
             return QMessageBox.warning(self, "Warning", "No data available")
@@ -274,7 +269,7 @@ class background_value_input_manual(QWidget):
         if isinstance(widget, indicator_background_value_input):
             return widget.get_final_boundary
         else:
-            print("Not a indicator_background_value_input")
+            logging.warning("Not a indicator_background_value_input")
 
     @property
     def get_final_boundarys(self):
@@ -337,25 +332,16 @@ class function_win(QWidget):
         self.table_view.setModel(self.table_model)
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
-
-        # 调整窗口大小以适应表格内容
         self.adjustSize()
-        # 创建导出按钮
-        self.export_button = QPushButton("Export to Excel")
+        self.export_button = QPushButton("Export to TableFile")
         self.export_button.clicked.connect(self.export_to_excel)
-
-        # 创建绘图按钮
         self.plot_button = QPushButton("Plot results")
         self.plot_button.clicked.connect(self.plot_data)
-
-        # 创建导出Shapefile按钮
-        self.export_shp_button = QPushButton("Export to GeoPackage")
+        self.export_shp_button = QPushButton("Export to Spatial vector data")
         self.export_shp_button.clicked.connect(self.export_to_gpkg)
-
-        # 创见自动报告按钮
         self.auto_report_button = QPushButton("Auto report")
         self.auto_report_button.clicked.connect(self.auto_report)
-        # 创建布局
+        # Set the layout
         layout = QVBoxLayout()
         layout.addWidget(self.table_view)
         layout.addWidget(self.export_button)
