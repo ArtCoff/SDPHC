@@ -146,7 +146,7 @@ class CustomRadioButtons(QWidget):
         super().__init__()
 
         self.radiobutton1 = QRadioButton(self.tr("Empirical Threshold Analysis"))
-        self.radiobutton2 = QRadioButton(self.tr("Background Value Analysis"))
+        self.radiobutton2 = QRadioButton(self.tr("Background Level Analysis"))
         self.radiobutton3 = QRadioButton(self.tr("Principal Component Analysis"))
         self.radiobutton1.setChecked(True)
         self.current_method = Methods.Empirical_Threshold_Analysis

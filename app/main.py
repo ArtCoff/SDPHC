@@ -47,19 +47,6 @@ class start_window(QWidget):
         self.point_dataset = file_line_edit()
         self.method_radiobtns = CustomRadioButtons()
         self.language_switcher = LanguageSwitcher()
-
-        #! Default settings for boundary file and point data file paths used for testing
-        test = False
-        # test_boundary = (
-        #     Path.cwd().joinpath("tests/JN_boundary.gpkg").resolve().as_posix()
-        # )
-        # test_nis = Path.cwd().joinpath("tests/JN_NIS.gpkg").resolve().as_posix()
-        # test_boundary = Path.cwd().joinpath("tests/_boundary.gpkg").resolve().as_posix()
-        # test_nis = Path.cwd().joinpath("tests/_NIS.gpkg").resolve().as_posix()
-        if test:
-            self.outline_dataset.setText(test_boundary)
-            self.point_dataset.setText(test_nis)
-        #!
         form_layout = QFormLayout()
         form_layout.addRow(self.tr("Boundary File:"), self.outline_dataset)
         form_layout.addRow(self.tr("Survey File:"), self.point_dataset)
@@ -139,8 +126,6 @@ if __name__ == "__main__":
     lang = settings.get("DEFAULT_LANG", "en_US")
     trans.load(f"./assets/locales/{lang}.qm")
     app.installTranslator(trans)
-    # set application style
-    # app.setStyle("Windows")
     font_family = settings.get("FONT_FAMILY", "Arial")
     font_size = int(settings.get("FONT_SIZE", "12"))
     app.setFont(QFont(font_family, font_size))

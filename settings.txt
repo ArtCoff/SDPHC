@@ -4,4 +4,4 @@
 "FONT_FAMILY"="Arial"
 "FONT_SIZE"=10
 #通过"DEFAULT_LANG"控制界面默认语言,也可通过软件入口进行修改;中文界面请修改为"zh_CN"
-"DEFAULT_LANG"="en_US"
+"DEFAULT_LANG"="zh_CN"

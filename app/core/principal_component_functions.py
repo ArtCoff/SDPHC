@@ -162,7 +162,7 @@ def plot_PCA_loading_plot(pca_loadings, pca_var_ratio):
     return fig
 
 
-def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=100):
+def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=150):
     pca_scores = pd.DataFrame(pca_results, columns=["PC1", "PC2", "PC3"])
     # sns.set_style("whitegrid")
     fig, ax = plt.subplots(figsize=(6, 4), dpi=dpi)
@@ -222,7 +222,7 @@ def plot_PCA_Biplot(pca_results, pca_loadings, pca_var_ratio, dpi=100):
 
 def add_common_elements(ax, boundary_gdf, points_gdf):
     boundary_gdf.plot(
-        ax=ax, color="none", edgecolor="black", linewidth=1.5, label="Boundary"
+        ax=ax, color="none", edgecolor="black", linewidth=1, label="Boundary"
     )
     ax.scatter(
         points_gdf.geometry.x,
@@ -343,9 +343,9 @@ def plot_PC_interpolation(
 
     # * Customize the colorbar
     cbar = fig.colorbar(contour, ax=ax, orientation="vertical", pad=0.03, shrink=0.8)
-    cbar.set_label("PC1 Score (Red=High, Blue=Low)", fontsize=15)
+    cbar.set_label(f"{PC} Score (Red=High, Blue=Low)", fontsize=10)
     cbar.ax.tick_params(
-        labelsize=15,
+        labelsize=8,
     )
     from matplotlib.ticker import FormatStrFormatter
 

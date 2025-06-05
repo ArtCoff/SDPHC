@@ -84,7 +84,9 @@ class Attribute_Window_BackgroundValue(Attribute_Window):
         self.other_contaminants = []
         self.other_contaminants_text = QPlainTextEdit()
         self.other_contaminants_text.setReadOnly(True)
-        self.form_layout.addRow("Other contaminants:", self.other_contaminants_text)
+        self.form_layout.addRow(
+            self.tr("Other contaminants:"), self.other_contaminants_text
+        )
         options = read_file_columns(self.point_dataset)
         self.Detect_other_contaminants(options)
 
@@ -148,7 +150,7 @@ class indicator_background_value_input(QWidget):
             range=value_range
         )
         self.ecdf_btn = QPushButton("ECDF")
-        self.kmeans_btn = QPushButton("Clustering")
+        self.kmeans_btn = QPushButton(self.tr("Clustering"))
         self.ecdf_btn.clicked.connect(self.plot_ECDF)
         self.kmeans_btn.clicked.connect(self.plot_kemans_boundary)
         self.set_status()
@@ -186,13 +188,13 @@ class indicator_background_value_input(QWidget):
     def plot_kemans_boundary(self):
         fig = self.result.kmeans_fig
         if fig is None:
-            return QMessageBox.warning(self, "Warning", "No data available")
+            return QMessageBox.warning(self, "Warning", self.tr("No data available"))
         show_multiple_plots(fig)
 
     def plot_ECDF(self):
         fig = self.result.ecdf_fig
         if fig is None:
-            return QMessageBox.warning(self, "Warning", "No data available")
+            return QMessageBox.warning(self, "Warning", self.tr("No data available"))
         show_multiple_plots(fig)
 
     def set_value(self):
@@ -298,11 +300,13 @@ class background_value_input_manual(QWidget):
         QMessageBox.information(
             self,
             "Help",
-            "This page is used to manually input the background values of various indicators. "
-            "If you are not sure about the background values of the indicators, "
-            "you can use the 'Indicator Data Analysis' button to analyze the data and automatically determine the background values. "
-            "The 'ECDF' button can be used to draw the ECDF diagram of the indicator data. "
-            "After inputting the background values, click the 'Next' button to go to the next step.",
+            self.tr(
+                "This page is used to manually input the background values of various indicators. "
+                "If you are not sure about the background values of the indicators, "
+                "you can use the 'Indicator Data Analysis' button to analyze the data and automatically determine the background values. "
+                "The 'ECDF' button can be used to draw the ECDF diagram of the indicator data. "
+                "After inputting the background values, click the 'Next' button to go to the next step."
+            ),
         )  # type: ignore
 
 
@@ -370,9 +374,7 @@ class function_win(QWidget):
         show_multiple_plots(figs)
 
     def auto_report(self):
-        doc = auto_report(
-            self.gdf, background_file=None, final_boundarys=self.final_boundarys  # type: ignore
-        )
+        doc = auto_report()
         export_to_word(doc, self)  # type: ignore
 
 
