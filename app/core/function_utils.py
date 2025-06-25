@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 from utils.predefined_data import Drawing_specifications
 
 
-# 添加指北针 (North Arrow)
+# add North Arrow
 def add_north_arrow(ax):
     x, y, arrow_length = 0.95, 0.95, 0.1
     ax.annotate(
@@ -23,7 +23,7 @@ def add_north_arrow(ax):
     )
 
 
-# 添加比例尺 (Scale Bar)
+# add Scale Bar
 def add_scalebar(ax, location="lower left"):
     from matplotlib_scalebar.scalebar import ScaleBar
 
@@ -84,9 +84,8 @@ def read_file_columns(datapoints_shp):
 
 def point_dataset_preprocess(point_dataset, options):
 
-    # 读取数据
     gdf = gpd.read_file(point_dataset).to_crs(epsg=Drawing_specifications.EPSG_code)
-    # Key的类型为枚举类型，无法直接使用
+    # The type of Key is an enumeration type and cannot be used directly
     for key, value in options.items():
         if value in gdf.columns:
             gdf[key] = gdf[value]

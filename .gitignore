@@ -7,7 +7,6 @@
 # 忽略特定文件夹
 __pycache__/
 .vscode/
-auto_report_cache/
 app/.mypy_cache/
 app/cache/
 cache/

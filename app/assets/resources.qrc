@@ -1,0 +1,15 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>icons/icon.ico</file>
+        <file>icons/icon.png</file>
+        <file>icons/windows.ico</file>
+        <file>icons/ic_close.png</file>
+        <file>icons/ic_maximize.png</file>
+        <file>icons/ic_minimize.png</file>
+        <file>icons/ic_unmaximize.png</file>
+        <file>locales/en_US.qm</file>
+        <file>locales/zh_CN.qm</file>
+        <file>database/monitoring_pollution.json</file>
+    </qresource>
+</RCC>

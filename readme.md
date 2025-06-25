@@ -10,7 +10,7 @@ Instructions for using the software can be found in the docs directory.
 - [x] Background Level Analysis
 - [x] Principal Component Analysis
 - [x] Auto Report English Version
-- [ ] Binary Compiled Version
+- [x] Binary Compiled Version
 
 ## Software deployment
 

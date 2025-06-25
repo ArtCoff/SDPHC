@@ -139,6 +139,7 @@ def calculate_ExperienceValueMethod_scores(
     gdf, options, boundary_file, abnormal_score_config: dict = abnormal_score_config
 ):
     new_gdf = point_dataset_preprocess(gdf, options)
+    print(options)
     boundary_gdf = boundary_file_preprocess(boundary_file)
     # 确定需要处理的指标列
     indicators = list(abnormal_score_config.keys())

@@ -1,8 +1,6 @@
 from docx import Document
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_ALIGN_PARAGRAPH
-from docx.enum.section import WD_SECTION
 from pathlib import Path
-from PIL import Image
 from datetime import datetime
 import pandas as pd
 from utils import (
@@ -20,7 +18,7 @@ print(f"Report cache directory: {report_cache}")
 
 # cover page content
 def add_cover_page(doc):
-    for _ in range(6):  # 根据页面长度适当调整数量
+    for _ in range(6):
         i = doc.add_paragraph()
         i.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     title = doc.add_heading(
@@ -33,7 +31,9 @@ def add_cover_page(doc):
     )
     subtitle.style = "Subtitle"
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    for _ in range(6):  # 根据页面长度适当调整数量
+    for _ in range(
+        6
+    ):  # Adjust the number appropriately according to the length of the page
         i = doc.add_paragraph()
         i.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     doc.add_paragraph("Prepared by: XYZ Environmental Consulting Firm").alignment = (
@@ -73,17 +73,17 @@ def add_executive_summary(doc):
     doc.add_page_break()
 
 
-# 添加引言章节
+# Add introductory chapter
 def add_introduction_section(doc):
     doc.add_heading("2. Introduction", level=1)
 
-    # 背景
+    # background
     doc.add_heading("2.1 Background", level=2)
     doc.add_paragraph(
         "The XXX industrial site, located at 40°N, 75°W, operated as a petroleum storage facility from 2003. Historical records indicate multiple storage tank leaks, leading to potential Contamination  contamination of the shallow aquifer. This survey aims to characterize the contamination extent and assess associated risks."
     )
 
-    # 调查目标
+    # Survey objectives
     doc.add_heading("2.2 Objectives", level=2)
     objectives = [
         "Map Contamination  source zones and subsurface distribution.",
@@ -96,11 +96,11 @@ def add_introduction_section(doc):
     doc.add_page_break()
 
 
-# 添加法规框架章节（第3节）
+# Addition of a chapter on the regulatory framework
 def add_regulatory_framework_section(doc):
     doc.add_heading("3. Regulatory Framework", level=1)
 
-    # 适用法规
+    # Applicable regulations
     doc.add_heading("3.1 Applicable Standards", level=2)
     standards = [
         "EPA Risk Screening Levels (RSLs, 2023)**: Benzene (0.1 ppb), TPH (500 mg/kg soil, 100 µg/L groundwater).",
@@ -110,7 +110,7 @@ def add_regulatory_framework_section(doc):
     for std in standards:
         doc.add_paragraph(std, style="List Bullet")
 
-    # 风险模型说明
+    # Description of the risk model
     doc.add_heading("3.2 Risk Assessment Models", level=2)
     doc.add_paragraph(
         "Risk assessment follows EPA RBCA Tier 1 methodology, integrating exposure pathways (soil gas inhalation, groundwater ingestion) and receptor sensitivity. EU SSVs are used for cross-validation."
@@ -119,17 +119,17 @@ def add_regulatory_framework_section(doc):
     doc.add_page_break()
 
 
-# 添加场地描述章节（第4节）
+# Add site description section
 def add_site_description_section(doc):
     doc.add_heading("4. Site Description", level=1)
 
-    # 物理特征
+    # physical property
     doc.add_heading("4.1 Physical Characteristics", level=2)
     doc.add_paragraph(
         "The XXX site covers an area of 12 hectares (120,000 m²) and features sandy loam soil. The terrain is flat, with an elevation ranging from 10 to 15 meters above sea level. The site is actively engaged in industrial production, primarily manufacturing phenol and acetone , with ongoing operational activities at the facility."
     )
 
-    # 水文地质
+    # hydrogeology
     doc.add_heading("4.2 Hydrogeology", level=2)
     add_note(
         doc,
@@ -143,7 +143,7 @@ def add_site_description_section(doc):
     for item in hydrogeology:
         doc.add_paragraph(item, style="List Bullet")
 
-    # 土地利用与受体
+    # Land use and receptors
     doc.add_heading("4.3 Land Use and Receptors", level=2)
     doc.add_paragraph(
         "The site is located within an urban industrial park, with multiple neighboring factories operating in close proximity (approximately 500 meters to the east). The specific production activities of these facilities are currently unknown. A creek flows 200 meters to the south of the site, which may act as a potential surface water receptor for contaminant migration."
@@ -152,11 +152,9 @@ def add_site_description_section(doc):
     doc.add_page_break()
 
 
-# 添加方法章节（含子章节）
+# Add methodology section
 def add_methodology_section(doc):
     doc.add_heading("5. Methodology", level=1)
-
-    # 子章节
     doc.add_heading("5.1 Non-Invasive Survey (NIS) Approach", level=2)
     doc.add_paragraph(
         "The NIS approach integrates multi-parameter monitoring and biogeochemical mechanism analysis, as illustrated in Fig. 1."
@@ -170,7 +168,6 @@ def add_methodology_section(doc):
         width=12,
         figure_title="Figure 1: NIS Conceptual Framework",
     )
-    # 子章节
     doc.add_heading("5.2 Non-Invasive Survey Measurement Methods", level=2)
     add_note(
         doc,
@@ -188,7 +185,7 @@ def add_methodology_section(doc):
         "Grid spacing 20 m × 20 m; soil gas sampling depth 0.5 m using stainless steel probes."
     )
     doc.add_heading("5.2.2 CO₂/O₂ Flux Monitoring", level=3)
-    # CO2/O2 测量
+    # CO2/O2
     co2o2_paragraph = doc.add_paragraph()
     co2o2_paragraph.add_run("Instrument: ").bold = True
     co2o2_paragraph.add_run(
@@ -202,7 +199,7 @@ def add_methodology_section(doc):
         "Frequency: Bi-weekly measurements during survey period.",
     ]
     add_bullet_list(doc, items=content)
-    # H2S/CH4 测量
+    # H2S/CH4
     doc.add_heading("5.2.3 H₂S and CH₄ Detection", level=3)
     h2sch4_paragraph = doc.add_paragraph()
     h2sch4_paragraph.add_run("Instrument: ").bold = True
@@ -236,7 +233,7 @@ def add_methodology_section(doc):
     doc.add_page_break()
 
 
-# 添加结果章节（含表格和图表）
+# Add results section (with tables and charts)
 def add_results_section(doc, gdf):
     doc.add_heading("6. Results and Data Analysis", level=1)
     doc.add_heading("6.1 NIS survey", level=2)
@@ -251,8 +248,8 @@ def add_results_section(doc, gdf):
         figure_title="Figure 2: Sampling Point Distribution",
         legend="Legend: Dots = NIS survey point; Black closed polygon = Park Boundary",
     )
-    nis_data = gdf[["point_code", "VOCs", "O2", "CO2", "CH4", "H2S"]].copy()
-    radon_data = gdf[["point_code", "Radon"]].copy().dropna()
+    nis_data = gdf[["Point_ID", "VOCs", "O2", "CO2", "CH4", "H2S"]].copy()
+    radon_data = gdf[["Point_ID", "Radon"]].copy().dropna()
     exceed_data = gdf[gdf["The_other_soil_gas_scores"] >= 6].copy()
     exceed_data = exceed_data[
         [
@@ -318,7 +315,7 @@ def add_risk_assessment_section(doc):
         "The risk assessment follows the EPA RBCA Tier 1 methodology, integrating exposure pathways and receptor sensitivity."
     )
 
-    # 子章节：暴露途径
+    # Subchapter: Exposure Pathways
     doc.add_heading("7.1.1 Exposure Pathways", level=3)
     exposure_pathways = [
         "Inhalation of soil gas (vapor intrusion into residential buildings).",
@@ -328,13 +325,13 @@ def add_risk_assessment_section(doc):
     for path in exposure_pathways:
         doc.add_paragraph(path, style="List Bullet")
 
-    # 子章节：受体分析
+    # Subchapter: Receptor Analysis
     doc.add_heading("7.1.2 Receptor Analysis", level=3)
     doc.add_paragraph(
         "The primary receptors include nearby residents living within 500 meters east of the site and potential future industrial workers on-site."
     )
 
-    # 子章节：风险计算
+    # Subchapter: Risk calculation
     doc.add_heading("7.1.3 Risk Calculation", level=3)
     risk_table_data = [
         [
@@ -360,7 +357,7 @@ def add_risk_assessment_section(doc):
         "Ecological risks were assessed using the EU Soil Screening Values (SSVs) and EPA ECO-SSL guidelines."
     )
 
-    # 子章节：土壤生态影响
+    # Subchapter: Soil ecological impacts
     doc.add_heading("7.2.1 Soil Toxicity", level=3)
     soil_toxicity = [
         "TPH >10,000 mg/kg in Area A inhibits microbial diversity.",
@@ -369,7 +366,7 @@ def add_risk_assessment_section(doc):
     for item in soil_toxicity:
         doc.add_paragraph(item, style="List Bullet")
 
-    # 子章节：地表水生态影响
+    # Subchapter: Ecological impacts of surface water
     doc.add_heading("7.2.2 Surface Water Impact", level=3)
     doc.add_paragraph(
         "The plume discharge into the nearby creek may affect benthic organisms. Predicted TPH concentrations exceed EPA aquatic toxicity thresholds."
@@ -387,7 +384,7 @@ def add_risk_assessment_section(doc):
     doc.add_page_break()
 
 
-# 添加结论章节
+# Addition of a concluding section
 def add_conclusion_section(doc):
     doc.add_heading("8. Conclusions and Recommendations", level=1)
     add_note(
@@ -407,10 +404,10 @@ def add_conclusion_section(doc):
         doc.add_paragraph(item, style="List Number")
 
 
-# 主函数
+# main function
 def auto_report_for_empirical_threshold_analysis(gdf=None):
     doc = Document()
-    setup_styles(doc)  # 设置默认样式
+    setup_styles(doc)  # Setting the default style
     add_cover_page(doc)
     add_Disclaimer(doc)
     # add_table_of_contents(doc)

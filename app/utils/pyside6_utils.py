@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from pathlib import Path
+import assets.resources_rc as resources_rc
 
 current_dir = Path(__file__).parent
 
@@ -15,8 +16,7 @@ current_dir = Path(__file__).parent
 class AppStyle:
     @staticmethod
     def icon():
-        # return QIcon(r"/assets/icons/icon.ico")
-        return QIcon(str(current_dir.parent / "assets" / "icons" / "icon.ico"))
+        return QIcon(":/icons/icon.ico")
 
     @staticmethod
     def title():

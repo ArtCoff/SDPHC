@@ -124,7 +124,8 @@ if __name__ == "__main__":
     # internationalization
     trans = QTranslator()
     lang = settings.get("DEFAULT_LANG", "en_US")
-    trans.load(f"./assets/locales/{lang}.qm")
+    # trans.load(f"./assets/locales/{lang}.qm")
+    trans.load(f":locales/{lang}.qm")
     app.installTranslator(trans)
     font_family = settings.get("FONT_FAMILY", "Arial")
     font_size = int(settings.get("FONT_SIZE", "12"))
