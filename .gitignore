@@ -9,7 +9,7 @@ __pycache__/
 .vscode/
 app/.mypy_cache/
 app/cache/
-cache/
+auto_report_cache/
 build/
 dist/
 # 忽略临时文件夹（递归匹配所有子目录中的 tmp 文件夹）
